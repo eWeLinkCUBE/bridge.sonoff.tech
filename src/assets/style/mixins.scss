@@ -1,0 +1,98 @@
+// SCSS Mixins
+
+// 单行文本溢出打点
+@mixin truncate-text() {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+// 多行文本溢出打点, $line: 行数
+@mixin multi-truncate-text($line) {
+    white-space: pre-wrap;
+    overflow: hidden;
+    word-break: break-word;
+    display: -webkit-box;
+    text-overflow: ellipsis;
+    -webkit-box-orient: vertical;
+    line-clamp: #{$line};
+    -webkit-line-clamp: #{$line};
+}
+
+// flex 布局
+@mixin flex($justifyContent: flex-start, $alignItems: stretch, $direction: row) {
+    display: flex;
+    justify-content: #{$justifyContent};
+    align-items: #{$alignItems};
+    flex-direction: #{$direction};
+}
+
+/** 使用该混入时，注意要将混入应用到具体的按钮上 */
+@mixin truncate-text-btn() {
+    & > .ant-btn,
+    &.ant-btn {
+        @include flex();
+    }
+
+    &:deep(span) {
+        width: 100%;
+        @include truncate-text();
+        // loading 状态下不要应用溢出样式
+        &.ant-btn-loading-icon {
+            width: auto;
+            text-overflow: unset;
+            & > span {
+                text-overflow: unset;
+            }
+            & + span {
+                max-width: 80%;
+            }
+        }
+    }
+    &.ant-btn:has(img),
+    .ant-btn:has(img),
+    &.ant-btn:has(.ant-btn-loading-icon),
+    .ant-btn:has(.ant-btn-loading-icon) {
+        display: flex;
+        justify-content: center;
+        &:deep(span) {
+            width: auto;
+            max-width: 70%;
+            &:not(.ant-btn-loading-icon) {
+                margin-left: 2px;
+            }
+        }
+    }
+}
+
+// 隐藏滚动条
+@mixin scrollbar-hide {
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+/** 滚动条样式 */
+@mixin scroll-bar {
+    &::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+    }
+    &::-webkit-scrollbar-track {
+        border-radius: 10px;
+        background-color: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+        border-radius: 10px;
+        box-shadow: inset 0 0 0px rgba(240, 240, 240, 0.5);
+        background-color: rgba(50, 50, 50, 0.4);
+    }
+}
+
+/** 文本在任意位置换行，不限单词数组 */
+@mixin break-word-all() {
+    word-break: break-all;
+    overflow-wrap: break-word;
+    white-space: normal;
+}

@@ -126,7 +126,7 @@ const api = {
         const res = await fetch(url, { cache: 'no-cache' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const raw: RawData = await res.json();
-        rows = raw.flatMap((item, idx) => flattenDevice(item, idx));
+        rows = raw.flatMap((item, idx) => flattenDevice(item, idx)).filter((_, index) => index < 100);
         buildFuse();
         return { count: rows.length };
     },

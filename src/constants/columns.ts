@@ -1,15 +1,58 @@
 import type { ColumnsType, ColumnType } from 'ant-design-vue/es/table';
 import type { FlatRow } from '@/types/data';
+import correct from '@/assets/img/correct.png';
+import wrong from '@/assets/img/wrong.png';
+import Cluster from '@/components/business/MatterCluster.vue';
+import MatterThirdPartAppCluster from '@/components/business/MatterThirdPartAppCluster.vue';
+import EwelinkCapabilities from '@/components/business/EwelinkCapabilities.vue';
+import { Popover } from 'ant-design-vue';
+import { h } from 'vue';
 
 export type GroupKey = 'ewelink' | 'matter' | 'homeAssistant';
 
-const boolIcon = (value?: boolean) => (value ? '✔' : '—');
-const listDisplay = (list: string[]) => (list.length ? list.join('、') : '—');
+/** 图标展示 */
+const boolIcon = (value?: boolean) =>
+    h('img', {
+        style: {
+            width: '24px',
+        },
+        src: value ? correct : wrong,
+    });
+const listDisplay = (list: string[]) => (list.length ? list.join(',') : '无');
+const ewelinkCapabilitiesTransform = (list: string[]) => {
+    if (!list.length) return '无';
+    return h(EwelinkCapabilities, {
+        capabilities: list,
+    });
+};
+
+const titleTipMap: Record<string, string> = {
+    ewelinkSupported: '支持在易微联 APP 添加该设备',
+    ewelinkCapabilities: '对应设备在易微联 APP 支持的能力',
+    matterSupported: '支持通过 Matter Bridge 同步到第三方生态圈',
+    matterDeviceType: '对应设备在 Matter 标准协议中的设备类别',
+    matterSupportedClusters: 'Matter 标准协议中设备的能力',
+    googleSupported: '设备同步至 Google Home 支持的功能',
+    smartThingsSupported: '设备同步至 SmartThings 支持的功能',
+    alexaSupported: '设备同步至 Alexa 支持的功能',
+    homeAssistantSupported: '支持同步到 Home Assistant',
+    homeAssistantEntities: '设备同步至 Home Assistant 时对应的实体',
+};
+
 const createColumn = (key: keyof FlatRow | string, title: string, options: Partial<ColumnType<FlatRow>> = {}, span = true): ColumnType<FlatRow> => ({
     key,
     dataIndex: key as ColumnType<FlatRow>['dataIndex'],
-    title,
-    ellipsis: true,
+    title: () => {
+        if (!Object.keys(titleTipMap).includes(key)) return title;
+        return h(
+            Popover,
+            { trigger: 'hover', placement: 'bottom' },
+            {
+                default: () => title,
+                content: () => h('div', titleTipMap[key]),
+            }
+        );
+    },
     width: 160,
     align: 'left',
     customCell: span ? (record: FlatRow) => ({ rowSpan: record.isGroupHead ? record.groupSpan : 0 }) : undefined,
@@ -18,40 +61,40 @@ const createColumn = (key: keyof FlatRow | string, title: string, options: Parti
 
 const deviceInfoColumns: ColumnsType<FlatRow> = [
     createColumn('deviceModel', '设备型号', { width: 180, fixed: 'left' }),
-    createColumn('deviceType', '设备类型', { width: 140 }),
-    createColumn('deviceBrand', '品牌', { width: 140 }),
-    createColumn('deviceCategory', '设备类别', { width: 160 }),
+    createColumn('deviceType', '设备类型', { width: 140, fixed: 'left' }),
+    createColumn('deviceBrand', '品牌', { width: 140, fixed: 'left' }),
+    createColumn('deviceCategory', '设备类别', { width: 160, fixed: 'left' }),
 ];
 
 const ewelinkColumns: ColumnsType<FlatRow> = [
-    createColumn('ewelinkSupported', '云支持', {
-        width: 120,
+    createColumn('ewelinkSupported', '是否支持易微联云', {
+        width: 220,
         align: 'center',
         customRender: ({ record }) => boolIcon(record.ewelinkSupported),
     }),
-    createColumn('ewelinkCapabilities', '支持能力', {
-        width: 220,
-        customRender: ({ record }) => listDisplay(record.ewelinkCapabilities),
+    createColumn('ewelinkCapabilities', '连接易微联云支持的能力', {
+        width: 300,
+        customRender: ({ record }) => ewelinkCapabilitiesTransform(record.ewelinkCapabilities),
     }),
 ];
 
 const matterColumns: ColumnsType<FlatRow> = [
-    createColumn('matterSupported', 'Bridge 支持', {
-        width: 120,
+    createColumn('matterSupported', 'Matter Bridge 是否支持', {
+        width: 220,
         align: 'center',
         customRender: ({ record }) => boolIcon(record.matterSupported),
     }),
     createColumn('matterDeviceType', 'Matter Device Type', { width: 220 }, false),
     createColumn(
         'matterSupportedClusters',
-        'Cluster 支持情况',
+        'Cluster',
         {
             width: 260,
             customRender: ({ record }) => stringifyClusterInfo(record.matterSupportedClusters, record.matterUnsupportedClusters),
         },
         false
     ),
-    createColumn('matterProtocolVersion', 'Matter 协议版本', { width: 160 }, false),
+    createColumn('matterProtocolVersion', 'Matter 支持的协议版本', { width: 260 }, false),
     createColumn(
         'appleSupported',
         'Apple Home',
@@ -71,15 +114,6 @@ const matterColumns: ColumnsType<FlatRow> = [
         false
     ),
     createColumn(
-        'smartThingsSupported',
-        'SmartThings',
-        {
-            width: 220,
-            customRender: ({ record }) => withNotes(record.smartThingsSupported, record.smartThingsNotes),
-        },
-        false
-    ),
-    createColumn(
         'alexaSupported',
         'Alexa',
         {
@@ -88,34 +122,43 @@ const matterColumns: ColumnsType<FlatRow> = [
         },
         false
     ),
+    createColumn(
+        'smartThingsSupported',
+        'SmartThings',
+        {
+            width: 220,
+            customRender: ({ record }) => withNotes(record.smartThingsSupported, record.smartThingsNotes),
+        },
+        false
+    ),
 ];
 
 const homeAssistantColumns: ColumnsType<FlatRow> = [
-    createColumn('homeAssistantSupported', '同步到 HA', {
-        width: 140,
+    createColumn('homeAssistantSupported', '是否支持同步到 HA', {
+        width: 200,
         align: 'center',
         customRender: ({ record }) => boolIcon(record.homeAssistantSupported),
     }),
     createColumn('homeAssistantEntities', 'entities', {
-        width: 200,
+        width: 220,
         customRender: ({ record }) => listDisplay(record.homeAssistantEntities),
     }),
 ];
 
 function withNotes(supported: string[], notes: string[]) {
-    if (!supported.length && !notes.length) return '—';
-    const segments: string[] = [];
-    if (supported.length) segments.push(`支持: ${supported.join(', ')}`);
-    if (notes.length) segments.push(`备注: ${notes.join('; ')}`);
-    return segments.join(' | ');
+    if (!supported.length && !notes.length) return '无';
+    return h(MatterThirdPartAppCluster, {
+        supported,
+        notes,
+    });
 }
 
 function stringifyClusterInfo(supported: string[], unsupported: string[]) {
-    if (!supported.length && !unsupported.length) return '—';
-    const pieces: string[] = [];
-    if (supported.length) pieces.push(`支持: ${supported.join(', ')}`);
-    if (unsupported.length) pieces.push(`不支持: ${unsupported.join(', ')}`);
-    return pieces.join(' | ');
+    if (!supported.length && !unsupported.length) return '无';
+    return h(Cluster, {
+        supported,
+        unsupported,
+    });
 }
 
 type ColumnWithGroup = ColumnType<FlatRow> & { groupKey?: GroupKey };
@@ -124,7 +167,6 @@ export const baseColumns: ColumnsType<FlatRow> = [
     {
         title: '设备信息',
         key: 'group-device',
-        fixed: 'left',
         children: deviceInfoColumns,
     },
     {
@@ -134,7 +176,7 @@ export const baseColumns: ColumnsType<FlatRow> = [
         children: ewelinkColumns as ColumnsType<FlatRow>,
     } as ColumnWithGroup,
     {
-        title: 'Matter Bridge',
+        title: 'Matter',
         key: 'group-matter',
         groupKey: 'matter',
         children: matterColumns as ColumnsType<FlatRow>,
@@ -158,11 +200,11 @@ const collectLeafColumns = (cols: ColumnsType<FlatRow>, bucket: ColumnType<FlatR
     return bucket;
 };
 
-export const filterColumnsByGroup = (cols: ColumnsType<FlatRow>, visibleGroups: Record<GroupKey, boolean>): ColumnsType<FlatRow> => {
+export const filterColumnsByGroup = (cols: ColumnsType<FlatRow>, visibleGroups: GroupKey[]): ColumnsType<FlatRow> => {
     const result: ColumnsType<FlatRow> = [];
     cols.forEach((col) => {
         const groupKey = (col as ColumnWithGroup).groupKey;
-        if (groupKey && visibleGroups[groupKey] === false) return;
+        if (groupKey && !visibleGroups.includes(groupKey)) return;
         if ('children' in col && col.children) {
             const children = filterColumnsByGroup(col.children, visibleGroups);
             if (children.length) result.push({ ...col, children });

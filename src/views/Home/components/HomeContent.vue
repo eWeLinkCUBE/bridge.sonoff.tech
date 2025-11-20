@@ -1,25 +1,24 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, toRaw, watch, h } from 'vue';
-import type { CSSProperties } from 'vue';
-import { useDebounceFn, useVirtualList } from '@vueuse/core';
-import { Table, Input, Button, Space, Popover, Switch, Spin, Tag, Checkbox } from 'ant-design-vue';
-
+import { ref, computed, onMounted, toRaw, h } from 'vue';
+import { useDebounceFn } from '@vueuse/core';
+import { Input, Button, Spin, Checkbox, CheckboxGroup } from 'ant-design-vue';
+import SearchInput from '@/components/SearchInput/Index.vue';
 import type { ColumnsType, ColumnType } from 'ant-design-vue/es/table';
 import type { FilterDropdownProps, FilterValue } from 'ant-design-vue/es/table/interface';
 import type { FlatRow } from '@/types/data';
 import type { EnumFilters, EnumOptionMap } from '@/workers/worker';
-import { baseColumns, filterColumnsByGroup, sumColumnWidth, type GroupKey } from '@/constants/columns';
+import { baseColumns, filterColumnsByGroup, type GroupKey } from '@/constants/columns';
 import { loadData, fetchDistinct, queryRows } from '@/services/dataClient';
+import VirtualTable from '@/components/VirtualTable/Index.vue';
 
-const ROW_HEIGHT = 48;
 // 筛选项的显示数量限制，每次显示更多也依照该增量展开，保持体验一致
 const MAX_FILTER_OPTIONS = 80;
 
 // 表头模块开关（大分组显隐），与列定义中的 groupKey 对应
-const groupOptions: Array<{ key: GroupKey; title: string }> = [
-    { key: 'ewelink', title: '易微联云' },
-    { key: 'matter', title: 'Matter Bridge' },
-    { key: 'homeAssistant', title: 'Home Assistant' },
+const groupOptions: { label: string; value: GroupKey }[] = [
+    { value: 'ewelink', label: '易微联云' },
+    { value: 'matter', label: 'Matter Bridge' },
+    { value: 'homeAssistant', label: 'Home Assistant' },
 ];
 
 const rows = ref<FlatRow[]>([]);
@@ -61,11 +60,7 @@ const enumOptions = ref<EnumOptionMap>({
 });
 
 /** 三个组别的可视值 */
-const groupVisibility = ref<Record<GroupKey, boolean>>({
-    ewelink: true,
-    matter: true,
-    homeAssistant: true,
-});
+const groupVisibility = ref<GroupKey[]>(['ewelink', 'matter', 'homeAssistant']);
 
 /**  */
 const enumFilterSearch = ref<Partial<Record<keyof EnumFilters, string>>>({});
@@ -82,53 +77,8 @@ const increaseEnumFilterLimit = (key: keyof EnumFilters) => setEnumFilterLimit(k
 /** 根据模块开关过滤列分组，再在末端附加筛选设置 */
 const filteredColumns = computed(() => filterColumnsByGroup(baseColumns, groupVisibility.value));
 const tableColumns = computed(() => enhanceColumns(filteredColumns.value));
-const tableWidth = computed(() => `${sumColumnWidth(filteredColumns.value)}px`);
 const rowKey = (row: FlatRow) => row.rowId;
 
-// 表格体用虚拟列表包裹 antd Table，保持所有内置交互（筛选、合并单元格）仍可工作
-const {
-    list: virtualList,
-    containerProps,
-    wrapperProps,
-    scrollTo,
-} = useVirtualList(rows, {
-    itemHeight: ROW_HEIGHT,
-    overscan: 12,
-});
-const visibleRows = computed(() => virtualList.value.map((item) => item.data));
-
-const phantomStyle = computed<CSSProperties>(() => ({
-    height: wrapperProps.value.style.height ?? '0px',
-}));
-
-// virtual list 内部沿用 antd table，自行控制 translate 以模拟大列表
-const translateStyle = computed<CSSProperties>(() => {
-    const style = wrapperProps.value.style as Record<string, string>;
-    if ('marginTop' in style) {
-        return {
-            transform: `translateY(${style.marginTop ?? '0px'})`,
-            minWidth: tableWidth.value,
-        };
-    }
-    return {
-        transform: `translateX(${style.marginLeft ?? '0px'})`,
-        minWidth: tableWidth.value,
-    };
-});
-
-const bodyScrollRef = ref<HTMLElement | null>(null);
-// antd Table 内部会创建 div，需把虚拟列表容器与其 DOM 绑定
-watch(bodyScrollRef, (el) => {
-    if ('value' in containerProps.ref) containerProps.ref.value = el;
-});
-
-// 顶部“fake header”同步横向滚动，避免两个滚动条
-const horizontalOffset = ref(0);
-const handleBodyScroll = (event: Event) => {
-    containerProps.onScroll();
-    const target = event.target as HTMLElement;
-    horizontalOffset.value = target.scrollLeft;
-};
 
 // 避免响应式代理传入 worker 造成结构化克隆失败
 const cloneForWorker = <T>(value: T): T => structuredClone(toRaw(value));
@@ -144,7 +94,6 @@ const runQuery = async () => {
         });
         rows.value = res.rows;
         total.value = res.total;
-        scrollTo(0);
     } catch (e: any) {
         error.value = e?.message ?? String(e);
     } finally {
@@ -165,30 +114,6 @@ onMounted(async () => {
     } finally {
         loading.value = false;
     }
-});
-
-function resetAll() {
-    searchText.value = '';
-    enums.value = createDefaultEnums();
-    groupVisibility.value = { ewelink: true, matter: true, homeAssistant: true };
-    enumFilterSearch.value = {};
-    enumFilterLimit.value = {};
-    runQuery();
-}
-
-function handleGroupVisibilityChange(group: GroupKey, checked: boolean | string | number) {
-    if (typeof checked === 'string') {
-        groupVisibility.value[group] = checked === 'true';
-    } else if (typeof checked === 'number') {
-        groupVisibility.value[group] = checked === 1;
-    } else {
-        groupVisibility.value[group] = checked;
-    }
-}
-
-watch(rows, () => {
-    // 每次数据发生变化都滚动到最顶
-    scrollTo(0);
 });
 
 const enumColumnMap: Record<string, keyof EnumFilters> = {
@@ -392,76 +317,21 @@ const handleTableChange = (_pagination: unknown, filters: Record<string, FilterV
 <template>
     <section class="page-section">
         <div class="toolbar">
-            <Space class="toolbar-controls">
-                <Input v-model:value="searchText" placeholder="搜索：型号 / 品牌 / 类别 / 能力" style="width: 360px" allow-clear @input="debouncedQuery()" />
-                <Popover trigger="click" placement="bottomLeft">
-                    <template #content>
-                        <div class="column-popover">
-                            <div class="column-popover-title">模块显隐</div>
-                            <div v-for="option in groupOptions" :key="option.key" class="column-toggle-row">
-                                <span>{{ option.title }}</span>
-                                <Switch :checked="groupVisibility[option.key]" @change="(checked: boolean | string | number) => handleGroupVisibilityChange(option.key, checked)" />
-                            </div>
-                        </div>
-                    </template>
-                    <Button>模块显示</Button>
-                </Popover>
-                <Button @click="resetAll">重置</Button>
-            </Space>
-
-            <div class="toolbar-stats">
-                <span class="status-pill">
-                    <span class="status-dot" />
-                    <span class="status-count">共 {{ total }} 条</span>
-                </span>
-                <span v-if="loading" class="status-hint">（加载中…）</span>
-                <span v-if="error">
-                    <Tag color="error">请求失败：{{ error }}</Tag>
-                    <Button size="small" @click="runQuery">重试</Button>
-                </span>
+            <div class="toolbar-filter">
+                <span class="toolbar-filter_title">可查看：</span>
+                <CheckboxGroup v-model:value="groupVisibility" name="checkboxgroup" :options="groupOptions" />
+            </div>
+            <div class="toolbar-search">
+                <SearchInput v-model:value="searchText" placeholder="请输入关键字进行搜索" style="width: 360px" allow-clear @input="debouncedQuery()" />
             </div>
         </div>
 
         <div class="data-table-shell">
-            <div class="data-table-header">
-                <div class="header-inner" :style="{ transform: `translateX(-${horizontalOffset}px)` }">
-                    <Table
-                        class="data-table"
-                        size="small"
-                        bordered
-                        :columns="tableColumns"
-                        :dataSource="[]"
-                        :pagination="false"
-                        :rowKey="rowKey"
-                        :style="{ minWidth: tableWidth }"
-                        @change="handleTableChange"
-                    />
-                </div>
-            </div>
-            <div class="data-table-body" ref="bodyScrollRef" @scroll="handleBodyScroll">
-                <template v-if="!loading && rows.length === 0">
-                    <div class="empty-placeholder">暂无数据</div>
-                </template>
-                <template v-else>
-                    <div class="virtual-phantom" :style="phantomStyle">
-                        <div class="virtual-inner" :style="translateStyle">
-                            <Table
-                                class="data-table"
-                                :columns="tableColumns"
-                                :dataSource="visibleRows"
-                                :pagination="false"
-                                :rowKey="rowKey"
-                                size="small"
-                                bordered
-                                :showHeader="false"
-                                :style="{ minWidth: tableWidth }"
-                            />
-                        </div>
-                    </div>
-                </template>
-            </div>
             <div v-if="loading" class="tbl-loading">
                 <Spin />
+            </div>
+            <div v-else class="data-table-body">
+                <VirtualTable :columns="tableColumns" :dataSource="rows" :rowKey="rowKey" size="small" bordered  @change="handleTableChange"/>
             </div>
         </div>
     </section>
@@ -470,7 +340,7 @@ const handleTableChange = (_pagination: unknown, filters: Record<string, FilterV
 <style scoped lang="scss">
 .page-section {
     height: 100%;
-    padding: 12px 20px 20px;
+    padding: 16px 40px 56px;
     display: flex;
     flex-direction: column;
     transition: background 0.4s ease;
@@ -481,30 +351,27 @@ const handleTableChange = (_pagination: unknown, filters: Record<string, FilterV
     margin-bottom: 20px;
     padding: 14px 18px;
     border-radius: 16px;
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-    animation: float-in 0.4s ease;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 16px;
-}
 
-.toolbar-controls {
-    flex: 1;
-    align-items: center;
-}
+    .toolbar-filter {
+        &_title {
+            font-size: 14px;
+            font-weight: 500;
+        }
+    }
 
-.toolbar :deep(.ant-select),
-.toolbar :deep(.ant-input) {
-    transition: box-shadow 0.3s ease;
+    :deep(.ant-select),
+    :deep(.ant-input) {
+        transition: box-shadow 0.3s ease;
+    }
+    :deep(.ant-select-focused),
+    :deep(.ant-input-focused) {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
 }
-
-.toolbar :deep(.ant-select-focused),
-.toolbar :deep(.ant-input-focused) {
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-}
-
 
 .data-table-shell {
     border-radius: 16px;
@@ -530,7 +397,7 @@ const handleTableChange = (_pagination: unknown, filters: Record<string, FilterV
 }
 
 .data-table-header :deep(.ant-table-tbody) {
-    display: none;
+    // display: none;
 }
 
 .data-table-body {
@@ -542,8 +409,8 @@ const handleTableChange = (_pagination: unknown, filters: Record<string, FilterV
 }
 
 .data-table :deep(.ant-table-cell) {
-    white-space: nowrap;
-    transition: background 0.2s ease;
+    // white-space: nowrap;
+    // transition: background 0.2s ease;
 }
 
 .data-table :deep(.ant-table-tbody > tr:hover > td) {
