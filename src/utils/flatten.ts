@@ -61,6 +61,7 @@ export function flattenDevice(device: RawDevice, index: number): FlatRow[] {
             parentId,
             isGroupHead: idx === 0,
             groupSpan: idx === 0 ? span : 0,
+            deviceInfoRowSpan: 1,
             searchText,
             deviceModel: device.deviceInfo.model,
             deviceType: device.deviceInfo.type,

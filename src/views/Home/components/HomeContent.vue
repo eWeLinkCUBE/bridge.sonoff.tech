@@ -79,7 +79,6 @@ const filteredColumns = computed(() => filterColumnsByGroup(baseColumns, groupVi
 const tableColumns = computed(() => enhanceColumns(filteredColumns.value));
 const rowKey = (row: FlatRow) => row.rowId;
 
-
 // 避免响应式代理传入 worker 造成结构化克隆失败
 const cloneForWorker = <T>(value: T): T => structuredClone(toRaw(value));
 
@@ -159,10 +158,18 @@ const renderFilterDropdown = (enumKey: keyof EnumFilters) => (props: FilterDropd
     const limit = getEnumFilterLimit(enumKey);
     const { options, hasMore, total } = getDropdownOptionMeta(enumKey, limit);
     const selectedKeys = (props.selectedKeys as string[]) ?? [];
+    const isAllChecked = selectedKeys.length === 0;
+    const isAllIndeterminate = !isAllChecked && selectedKeys.length > 0;
 
     const toggleValue = (value: string, checked: boolean) => {
         const next = checked ? [...selectedKeys, value] : selectedKeys.filter((v) => v !== value);
         props.setSelectedKeys?.(next);
+    };
+
+    const toggleAll = (checked: boolean) => {
+        if (checked) {
+            props.setSelectedKeys?.([]);
+        }
     };
 
     const clear = () => {
@@ -189,24 +196,40 @@ const renderFilterDropdown = (enumKey: keyof EnumFilters) => (props: FilterDropd
             {
                 class: 'ant-dropdown-menu ant-dropdown-menu-root ant-table-filter-dropdown-menu filter-menu',
             },
-            options.length
-                ? options.map((opt) =>
-                    h(
-                        'label',
-                        {
-                            key: opt.value,
-                            class: 'ant-dropdown-menu-item filter-menu-item',
-                        },
-                        [
-                            h(Checkbox, {
-                                checked: selectedKeys.includes(opt.value),
-                                onChange: (e: any) => toggleValue(opt.value, e.target.checked),
-                            }),
-                            h('span', { class: 'filter-menu-text' }, `${formatFilterLabel(enumKey, opt.value)} (${opt.count})`),
-                        ]
+            [
+                h(
+                    'label',
+                    {
+                        class: 'ant-dropdown-menu-item filter-menu-item filter-menu-item__all',
+                    },
+                    [
+                        h(Checkbox, {
+                            checked: isAllChecked,
+                            indeterminate: isAllIndeterminate,
+                            onChange: (e: any) => toggleAll(e.target.checked),
+                        }),
+                        h('span', { class: 'filter-menu-text' }, '全部'),
+                    ]
+                ),
+                options.length
+                    ? options.map((opt) =>
+                        h(
+                            'label',
+                            {
+                                key: opt.value,
+                                class: 'ant-dropdown-menu-item filter-menu-item',
+                            },
+                            [
+                                h(Checkbox, {
+                                    checked: selectedKeys.includes(opt.value),
+                                    onChange: (e: any) => toggleValue(opt.value, e.target.checked),
+                                }),
+                                h('span', { class: 'filter-menu-text' }, `${formatFilterLabel(enumKey, opt.value)} (${opt.count})`),
+                            ]
+                        )
                     )
-                )
-                : h('div', { class: 'filter-empty' }, '无匹配项')
+                    : h('div', { class: 'filter-empty' }, '无匹配项'),
+            ]
         ),
         hasMore
             ? h(
@@ -331,7 +354,7 @@ const handleTableChange = (_pagination: unknown, filters: Record<string, FilterV
                 <Spin />
             </div>
             <div v-else class="data-table-body">
-                <VirtualTable :columns="tableColumns" :dataSource="rows" :rowKey="rowKey" size="small" bordered  @change="handleTableChange"/>
+                <VirtualTable :columns="tableColumns" :dataSource="rows" :rowKey="rowKey" size="small" bordered @change="handleTableChange" />
             </div>
         </div>
     </section>

@@ -39,7 +39,9 @@ const titleTipMap: Record<string, string> = {
     homeAssistantEntities: '设备同步至 Home Assistant 时对应的实体',
 };
 
-const createColumn = (key: keyof FlatRow | string, title: string, options: Partial<ColumnType<FlatRow>> = {}, span = true): ColumnType<FlatRow> => ({
+type SpanStrategy = 'group' | 'deviceInfo' | false;
+
+const createColumn = (key: keyof FlatRow | string, title: string, options: Partial<ColumnType<FlatRow>> = {}, span: SpanStrategy = 'group'): ColumnType<FlatRow> => ({
     key,
     dataIndex: key as ColumnType<FlatRow>['dataIndex'],
     title: () => {
@@ -48,22 +50,27 @@ const createColumn = (key: keyof FlatRow | string, title: string, options: Parti
             Popover,
             { trigger: 'hover', placement: 'bottom' },
             {
-                default: () => title,
+                default: () => h('div', { style: { cursor: 'pointer' } }, title),
                 content: () => h('div', titleTipMap[key]),
             }
         );
     },
     width: 160,
     align: 'left',
-    customCell: span ? (record: FlatRow) => ({ rowSpan: record.isGroupHead ? record.groupSpan : 0 }) : undefined,
+    customCell:
+        span === false
+            ? undefined
+            : (record: FlatRow) => ({
+                rowSpan: span === 'deviceInfo' ? record.deviceInfoRowSpan ?? 1 : record.isGroupHead ? record.groupSpan : 0,
+            }),
     ...options,
 });
 
 const deviceInfoColumns: ColumnsType<FlatRow> = [
-    createColumn('deviceModel', '设备型号', { width: 180, fixed: 'left' }),
+    createColumn('deviceModel', '设备型号', { width: 180, fixed: 'left' }, 'deviceInfo'),
     createColumn('deviceType', '设备类型', { width: 140, fixed: 'left' }),
-    createColumn('deviceBrand', '品牌', { width: 140, fixed: 'left' }),
-    createColumn('deviceCategory', '设备类别', { width: 160, fixed: 'left' }),
+    createColumn('deviceBrand', '品牌', { width: 140, fixed: 'left' }, 'deviceInfo'),
+    createColumn('deviceCategory', '设备类别', { width: 160, fixed: 'left' }, 'deviceInfo'),
 ];
 
 const ewelinkColumns: ColumnsType<FlatRow> = [
@@ -72,10 +79,15 @@ const ewelinkColumns: ColumnsType<FlatRow> = [
         align: 'center',
         customRender: ({ record }) => boolIcon(record.ewelinkSupported),
     }),
-    createColumn('ewelinkCapabilities', '连接易微联云支持的能力', {
-        width: 300,
-        customRender: ({ record }) => ewelinkCapabilitiesTransform(record.ewelinkCapabilities),
-    }),
+    createColumn(
+        'ewelinkCapabilities',
+        '连接易微联云支持的能力',
+        {
+            width: 300,
+            customRender: ({ record }) => ewelinkCapabilitiesTransform(record.ewelinkCapabilities),
+        },
+        'deviceInfo'
+    ),
 ];
 
 const matterColumns: ColumnsType<FlatRow> = [

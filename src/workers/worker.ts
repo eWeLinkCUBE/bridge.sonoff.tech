@@ -3,6 +3,7 @@ import { expose } from 'comlink';
 import Fuse from 'fuse.js';
 import { flattenDevice } from '../utils/flatten';
 import type { RawData, FlatRow } from '../types/data';
+import { prepareRowsForDeviceInfoMerge } from '../utils/deviceInfoGrouping';
 
 /** 每个列的筛选值 */
 export interface EnumFilters {
@@ -126,7 +127,7 @@ const api = {
         const res = await fetch(url, { cache: 'no-cache' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const raw: RawData = await res.json();
-        rows = raw.flatMap((item, idx) => flattenDevice(item, idx)).filter((_, index) => index < 100);
+        rows = raw.flatMap((item, idx) => flattenDevice(item, idx));
         buildFuse();
         return { count: rows.length };
     },
@@ -149,7 +150,8 @@ const api = {
         }
         const filtered = base.filter((r) => passEnums(r, enums));
         const sorted = sortRows(filtered, sort);
-        return { rows: sorted, total: sorted.length };
+        const rowsWithSpan = prepareRowsForDeviceInfoMerge(sorted, Boolean(sort?.length));
+        return { rows: rowsWithSpan, total: rowsWithSpan.length };
     },
 
     async distinct(): Promise<EnumOptionMap> {

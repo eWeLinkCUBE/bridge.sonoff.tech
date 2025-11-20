@@ -48,6 +48,7 @@ export interface FlatRow {
     parentId: string;
     isGroupHead: boolean;
     groupSpan: number;
+    deviceInfoRowSpan: number;
     searchText: string;
 
     deviceModel: string;
