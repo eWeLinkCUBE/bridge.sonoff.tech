@@ -26,7 +26,7 @@ const error = ref<string | null>(null);
 const searchText = ref('');
 const pagination = reactive({
     current: 1,
-    pageSize: 10,
+    pageSize: 20,
     showQuickJumper: true,
     showSizeChanger: true,
     total: total.value,
@@ -49,7 +49,7 @@ const runQuery = async (resetPage = false) => {
             q: searchText.value,
             enums: cloneForWorker(enums.value),
             page: pagination.current ?? 1,
-            pageSize: pagination.pageSize ?? 10,
+            pageSize: pagination.pageSize ?? 20,
         });
         rows.value = res.rows;
         total.value = res.total;
@@ -124,7 +124,7 @@ function applyEnumFiltersFromTable(filters: Record<string, FilterValue | null | 
 
 const handleTableChange = (pager: any, filters: Record<string, FilterValue | null>) => {
     pagination.current = pager?.current ?? pagination.current ?? 1;
-    pagination.pageSize = pager?.pageSize ?? pagination.pageSize ?? 10;
+    pagination.pageSize = pager?.pageSize ?? pagination.pageSize ?? 20;
 
     const changed = applyEnumFiltersFromTable(filters);
     if (changed) {
