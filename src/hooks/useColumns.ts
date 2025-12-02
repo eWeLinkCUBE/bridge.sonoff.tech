@@ -3,6 +3,7 @@ import { Input, Button, Checkbox } from 'ant-design-vue';
 import type { FlatRow } from '@/types/data';
 import correct from '@/assets/img/correct.png';
 import wrong from '@/assets/img/wrong.png';
+import searchIcon from '@/assets/img/search.png';
 import Cluster from '@/components/business/MatterCluster.vue';
 import MatterThirdPartAppCluster from '@/components/business/MatterThirdPartAppCluster.vue';
 import EwelinkCapabilities from '@/components/business/EwelinkCapabilities.vue';
@@ -316,12 +317,25 @@ const renderFilterDropdown = (enumKey: keyof EnumFilters) => (props: FilterDropd
             h(Input, {
                 size: 'small',
                 allowClear: true,
-                placeholder: '搜索选项（缺）',
+                placeholder: '请输入关键字搜索（缺）',
                 value: search,
                 'onUpdate:value': (val: string) => {
                     enumFilterSearch.value = { ...enumFilterSearch.value, [enumKey]: val };
                     resetEnumFilterLimit(enumKey);
                 },
+                style: {
+                    height: '32px',
+                },
+            }, {
+                prefix: () =>
+                    h('img', {
+                        src: searchIcon,
+                        alt: 'search',
+                        style: {
+                            width: '14px',
+                            height: '14px',
+                        },
+                    }),
             }),
         ]),
         h(
