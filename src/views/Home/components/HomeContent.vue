@@ -141,7 +141,7 @@ const handleTableChange = (pager: any, filters: Record<string, FilterValue | nul
                 <CheckboxGroup v-model:value="groupVisibility" name="checkboxgroup" :options="groupOptions" />
             </div>
             <div class="toolbar-search">
-                <SearchInput v-model:value="searchText" placeholder="请输入关键字进行搜索" style="width: 360px" allow-clear @input="debouncedQuery()" />
+                <SearchInput v-model:value="searchText" placeholder="请输入关键字进行搜索（缺）" style="width: 360px" allow-clear @input="debouncedQuery()" />
                 <span class="status-pill">
                     <span class="status-dot" />
                     <span class="status-count">共 {{ total }} 条</span>

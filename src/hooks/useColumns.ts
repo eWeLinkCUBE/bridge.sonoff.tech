@@ -444,7 +444,7 @@ const renderFilterDropdown = (enumKey: keyof EnumFilters) => (props: FilterDropd
                         size: 'small',
                         onClick: () => increaseEnumFilterLimit(enumKey),
                     },
-                    () => `See More（缺） (${Math.min(limit, total)}/${total})`
+                    () => `See More (${Math.min(limit, total)}/${total})`
                 )
             )
             : null,
@@ -456,7 +456,7 @@ const renderFilterDropdown = (enumKey: keyof EnumFilters) => (props: FilterDropd
                     type: 'link',
                     onClick: clear,
                 },
-                () => 'Reset（缺）'
+                () => 'Reset'
             ),
             h(
                 Button,
@@ -465,7 +465,7 @@ const renderFilterDropdown = (enumKey: keyof EnumFilters) => (props: FilterDropd
                     size: 'small',
                     onClick: () => props.confirm?.(),
                 },
-                () => 'Confirm（缺）'
+                () => 'Confirm'
             ),
         ]),
     ]);
@@ -518,7 +518,7 @@ export const useColumns = () => {
             children: deviceInfoColumns,
         },
         {
-            title: 'eWeLink(缺)',
+            title: 'eWeLink',
             key: 'group-ewelink',
             groupKey: 'ewelink',
             children: ewelinkColumns as ColumnsType<FlatRow>,
