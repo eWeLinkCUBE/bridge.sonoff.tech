@@ -15,7 +15,7 @@ import type { FilterDropdownProps } from 'ant-design-vue/es/table/interface';
 
 export type GroupKey = 'ewelink' | 'matter' | 'homeAssistant';
 
-type ColumnWithGroup = ColumnType<FlatRow> & { groupKey?: GroupKey };
+type ColumnWithGroup = ColumnType<FlatRow> & { groupKey?: GroupKey; spanStrategy?: SpanStrategy };
 
 // 筛选项的显示数量限制，每次显示更多也依照该增量展开，保持体验一致
 const MAX_FILTER_OPTIONS = 80;
@@ -127,9 +127,9 @@ const booleanColumnMap: Record<string, keyof EnumFilters> = {
     homeAssistantSupported: 'homeAssistantSupported',
 };
 
-type SpanStrategy = 'deviceInfo' | false;
+type SpanStrategy = 'mergeCell' | false;
 
-const createColumn = (key: keyof FlatRow | string, title: string, options: Partial<ColumnType<FlatRow>> = {}, span: SpanStrategy = false): ColumnType<FlatRow> => ({
+const createColumn = (key: keyof FlatRow | string, title: string, options: Partial<ColumnType<FlatRow>> = {}, span: SpanStrategy = false): ColumnWithGroup => ({
     key,
     dataIndex: key as ColumnType<FlatRow>['dataIndex'],
     title: () => {
@@ -144,6 +144,7 @@ const createColumn = (key: keyof FlatRow | string, title: string, options: Parti
         );
     },
     align: 'left',
+    spanStrategy: span,
     customCell:
         span === false
             ? undefined
@@ -153,10 +154,40 @@ const createColumn = (key: keyof FlatRow | string, title: string, options: Parti
     ...options,
 });
 
+const flattenLeafColumns = (cols: ColumnsType<FlatRow>): ColumnWithGroup[] => {
+    const result: ColumnWithGroup[] = [];
+    cols.forEach((col) => {
+        if ('children' in col && col.children) {
+            result.push(...flattenLeafColumns(col.children));
+        } else {
+            result.push(col as ColumnWithGroup);
+        }
+    });
+    return result;
+};
+
+const shouldDisableDeviceInfoSpan = (cols: ColumnsType<FlatRow>) => {
+    const leaves = flattenLeafColumns(cols);
+    const hasDeviceInfoSpan = leaves.some((col) => col.spanStrategy === 'mergeCell');
+    const hasNonDeviceInfoSpan = leaves.some((col) => col.spanStrategy !== 'mergeCell');
+    return hasDeviceInfoSpan && !hasNonDeviceInfoSpan;
+};
+
+const stripDeviceInfoSpan = (cols: ColumnsType<FlatRow>): ColumnWithGroup[] =>
+    cols.map((col) => {
+        if ('children' in col && col.children) {
+            return { ...(col as ColumnWithGroup), children: stripDeviceInfoSpan(col.children) };
+        }
+        const leaf = col as ColumnWithGroup;
+        if (leaf.spanStrategy !== 'mergeCell') return leaf;
+        const { customCell, ...rest } = leaf;
+        return { ...rest, customCell: undefined } as ColumnWithGroup;
+    });
+
 const deviceInfoColumns: ColumnsType<FlatRow> = [
-    createColumn('deviceType', 'Type', { width: 130, customRender: ({ record }) => record.deviceType }, 'deviceInfo'),
-    createColumn('deviceBrand', 'Brand', { width: 130, customRender: ({ record }) => record.deviceBrand }, 'deviceInfo'),
-    createColumn('deviceCategory', 'Category', { width: 130, customRender: ({ record }) => record.deviceCategory }, 'deviceInfo'),
+    createColumn('deviceType', 'Type', { width: 130, customRender: ({ record }) => record.deviceType }, 'mergeCell'),
+    createColumn('deviceBrand', 'Brand', { width: 130, customRender: ({ record }) => record.deviceBrand }, 'mergeCell'),
+    createColumn('deviceCategory', 'Category', { width: 130, customRender: ({ record }) => record.deviceCategory }, 'mergeCell'),
 ];
 
 const ewelinkColumns: ColumnsType<FlatRow> = [
@@ -167,7 +198,7 @@ const ewelinkColumns: ColumnsType<FlatRow> = [
             width: 166,
             customRender: ({ record }) => boolIcon(record.ewelinkSupported),
         },
-        'deviceInfo'
+        'mergeCell'
     ),
     createColumn(
         'ewelinkCapabilities',
@@ -176,7 +207,7 @@ const ewelinkColumns: ColumnsType<FlatRow> = [
             width: 280,
             customRender: ({ record }) => ewelinkCapabilitiesTransform(record.ewelinkCapabilities, record.ewelinkSupported),
         },
-        'deviceInfo'
+        'mergeCell'
     ),
 ];
 
@@ -470,7 +501,7 @@ const enhanceColumns = (cols: ColumnsType<FlatRow>): ColumnsType<FlatRow> => {
 
 export const useColumns = () => {
     const baseColumns: ColumnsType<FlatRow> = [
-        createColumn('deviceModel', 'Model', { width: 160, fixed: true, customRender: ({ record }) => record.deviceModel }, 'deviceInfo'),
+        createColumn('deviceModel', 'Model', { width: 160, fixed: true, customRender: ({ record }) => record.deviceModel }, 'mergeCell'),
         {
             title: 'Device information',
             key: 'group-device',
@@ -497,7 +528,10 @@ export const useColumns = () => {
     ];
 
     const tableColumns = computed(() => {
-        return enhanceColumns(filterColumnsByGroup(baseColumns, groupVisibility.value));
+        const filtered = filterColumnsByGroup(baseColumns, groupVisibility.value);
+        const disableSpan = shouldDisableDeviceInfoSpan(filtered);
+        const visibleColumns = disableSpan ? stripDeviceInfoSpan(filtered) : filtered;
+        return enhanceColumns(visibleColumns);
     });
 
     return {
