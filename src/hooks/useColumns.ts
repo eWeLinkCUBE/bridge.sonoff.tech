@@ -218,7 +218,7 @@ const matterColumns: ColumnsType<FlatRow> = [
         width: 166,
         customRender: ({ record }) => boolIcon(record.matterSupported),
     }),
-    createColumn('matterDeviceType', 'Matter Device Type', { width: 200 }, false),
+    createColumn('matterDeviceType', 'Matter Device Type', { width: 200, customRender: ({ record }) => record.matterDeviceType || 'Not Yet Supported' }, false),
     createColumn(
         'matterSupportedClusters',
         'Cluster',
@@ -228,7 +228,7 @@ const matterColumns: ColumnsType<FlatRow> = [
         },
         false
     ),
-    createColumn('matterProtocolVersion', 'Matter Version', { width: 150 }, false),
+    createColumn('matterProtocolVersion', 'Matter Version', { width: 150, customRender: ({ record }) => record.matterProtocolVersion || 'N/A' }, false),
     createColumn(
         'appleSupported',
         'Apple Home',
@@ -302,7 +302,7 @@ const getDropdownOptionMeta = (enumKey: keyof EnumFilters, limit?: number) => {
 };
 
 function stringifyClusterInfo(supported: string[], unsupported: string[]) {
-    if (!supported.length && !unsupported.length) return '暂未适配该设备（缺）';
+    if (!supported.length && !unsupported.length) return 'Not Yet Supported';
     return h(Cluster, {
         supported,
         unsupported,
