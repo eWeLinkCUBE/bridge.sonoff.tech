@@ -60,7 +60,7 @@ const runQuery = async (resetPage = false) => {
         loading.value = false;
     }
 };
-const debouncedQuery = useDebounceFn(() => runQuery(true), 200);
+const debouncedQuery = useDebounceFn(() => runQuery(true), 400);
 
 onMounted(async () => {
     loading.value = true;

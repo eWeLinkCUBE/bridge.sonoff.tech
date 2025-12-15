@@ -64,6 +64,7 @@ export interface QueryInput {
     pageSize?: number;
 }
 
+const MAX_FUSE_QUERY_LENGTH = 40;
 const SEARCH_KEYS = ['searchText'] as const;
 
 let rows: FlatRow[] = [];
@@ -90,10 +91,10 @@ const applyRowSpanForPage = (pageRows: FlatRow[]): FlatRow[] => {
 function buildFuse() {
     const fuseKeys = SEARCH_KEYS.map((key) => ({
         name: key,
-        getFn: (row: FlatRow) => row[key],
+        getFn: (row: FlatRow) => row[key as keyof FlatRow] as string,
     }));
     fuse = new Fuse(rows, {
-        includeMatches: true,
+        includeMatches: false,
         threshold: 0.3,
         ignoreLocation: true,
         keys: fuseKeys as any,
@@ -169,14 +170,14 @@ const api = {
         let base: FlatRow[];
         if (q && q.trim()) {
             const qStr = q.trim().toLowerCase();
-            const fuseResult = fuse!.search(qStr);
-            const prelim = fuseResult.map((result) => result.item);
-            base = prelim.filter((r) =>
-                SEARCH_KEYS.some((key) => {
-                    const value = r[key];
-                    return typeof value === 'string' && value.toLowerCase().includes(qStr);
-                })
-            );
+            // 为了优化性能，当搜索字符长度大于某个长度时，使用字符串匹配（To optimize performance, use string matching when the search character length is greater than a certain length）
+            const useFuse = fuse && qStr.length <= MAX_FUSE_QUERY_LENGTH;
+            if (useFuse) {
+                const fuseResult = fuse!.search(qStr);
+                base = fuseResult.map((result) => result.item);
+            } else {
+                base = rows.filter((r) => r.searchText.includes(qStr));
+            }
         } else {
             base = rows;
         }
