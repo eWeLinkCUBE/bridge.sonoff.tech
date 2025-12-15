@@ -234,7 +234,7 @@ const matterColumns: ColumnsType<FlatRow> = [
         'Apple Home',
         {
             width: 300,
-            customRender: ({ record }) => withNotes(record.appleSupported, record.appleNotes, [...record.matterSupportedClusters, ...record.matterUnsupportedClusters]),
+            customRender: ({ record }) => withNotes(record, 'appleSupported', 'appleNotes'),
         },
         false
     ),
@@ -243,7 +243,7 @@ const matterColumns: ColumnsType<FlatRow> = [
         'Google Home',
         {
             width: 300,
-            customRender: ({ record }) => withNotes(record.googleSupported, record.googleNotes, [...record.matterSupportedClusters, ...record.matterUnsupportedClusters]),
+            customRender: ({ record }) => withNotes(record, 'googleSupported', 'googleNotes'),
         },
         false
     ),
@@ -252,7 +252,7 @@ const matterColumns: ColumnsType<FlatRow> = [
         'SmartThings',
         {
             width: 300,
-            customRender: ({ record }) => withNotes(record.smartThingsSupported, record.smartThingsNotes, [...record.matterSupportedClusters, ...record.matterUnsupportedClusters]),
+            customRender: ({ record }) => withNotes(record, 'smartThingsSupported', 'smartThingsNotes'),
         },
         false
     ),
@@ -261,7 +261,7 @@ const matterColumns: ColumnsType<FlatRow> = [
         'Alexa',
         {
             width: 300,
-            customRender: ({ record }) => withNotes(record.alexaSupported, record.alexaNotes, [...record.matterSupportedClusters, ...record.matterUnsupportedClusters]),
+            customRender: ({ record }) => withNotes(record, 'alexaSupported', 'alexaNotes'),
         },
         false
     ),
@@ -278,12 +278,21 @@ const homeAssistantColumns: ColumnsType<FlatRow> = [
     }),
 ];
 
-function withNotes(supported: string[], notes: string[], clusters: string[]) {
-    const isThirdAppEmpty = !supported.length && !notes.length;
-    if (isThirdAppEmpty && !clusters.length) return 'Not Yet Supported';
-    if (isThirdAppEmpty && clusters.length) return 'Device Type Unsupported';
+function withNotes(
+    record: FlatRow,
+    supportKey: 'appleSupported' | 'googleSupported' | 'smartThingsSupported' | 'alexaSupported',
+    notesKey: 'appleNotes' | 'googleNotes' | 'smartThingsNotes' | 'alexaNotes'
+) {
+    const supported = record[supportKey];
+    const notes = record[notesKey];
+    const isThirdAppEmpty = !supported.length;
+    const { matterSupportedClusters, matterUnsupportedClusters, deviceType } = record;
+    const isClusterOrDeviceTypeEmpty = ![...matterSupportedClusters, ...matterUnsupportedClusters].length || !deviceType;
+
+    if (isThirdAppEmpty && isClusterOrDeviceTypeEmpty) return 'Not Yet Supported';
+    if (isThirdAppEmpty && !isClusterOrDeviceTypeEmpty) return 'Device Type Unsupported';
     return h(MatterThirdPartAppCluster, {
-        supported,
+        supported: supported,
         notes,
     });
 }
@@ -332,7 +341,7 @@ const formatFilterLabel = (key: keyof EnumFilters, value: string) => {
             style: {
                 width: '16px',
                 height: '16px',
-                marginTop: '-3px'
+                marginTop: '-3px',
             },
         });
     }
