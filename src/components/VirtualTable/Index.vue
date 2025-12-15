@@ -27,11 +27,11 @@
             </template>
         </Table>
     </div>
-    <div v-if="loading" class="loading placeholder">
+    <div v-show="loading" class="loading placeholder">
         <img src="@/assets/img/searching.png" alt="" />
         Searching…
     </div>
-    <div v-if="!dataSource.length && !loading" class="empty placeholder">
+    <div v-show="!dataSource.length && !loading" class="empty placeholder">
         <img src="@/assets/img/no-devices.png" alt="" />
         No Results Found
     </div>
