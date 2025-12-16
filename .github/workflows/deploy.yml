@@ -11,9 +11,8 @@ jobs:
     build-and-deploy:
         runs-on: ubuntu-latest
         env:
-            VITE_BASE_URL: ${{ github.repository == 'eWeLinkCUBE/bridge.sonoff.tech' && '/' || '/zigbee-device-table-web-test/' }}
-            # USE_CUSTOM_DOMAIN: 'true'
-            # CUSTOM_DOMAIN: example.com
+            IS_PRODUCTION: ${{ github.repository == 'eWeLinkCUBE/zigbee-bridge-ultra-supported-devices' && 'true' || 'false' }}
+            VITE_BASE_URL: ${{ github.repository == 'eWeLinkCUBE/zigbee-bridge-ultra-supported-devices' && '/' || '/zigbee-device-table-web-test' }}
 
         steps:
             - name: Checkout
@@ -31,26 +30,55 @@ jobs:
                   cache: 'pnpm'
                   cache-dependency-path: pnpm-lock.yaml
 
-            - name: Install
+            - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
-            - name: Build
+            - name: Build project
               run: |
-                  if [ "${USE_CUSTOM_DOMAIN}" = "true" ]; then
-                    USE_CUSTOM_DOMAIN=true pnpm build
-                  else
-                    pnpm build
-                  fi
-
-            - name: Create 404.html (SPA fallback)
-              run: cp dist/index.html dist/404.html
+                  pnpm build
 
             - name: Disable Jekyll
               run: touch dist/.nojekyll
 
-            - name: Add CNAME (optional)
-              if: env.USE_CUSTOM_DOMAIN == 'true' && env.CUSTOM_DOMAIN != ''
-              run: echo "$CUSTOM_DOMAIN" > dist/CNAME
+            # Create custom path and redirect files only for production deployment
+            - name: Create folder for custom path and copy index.html then generate redirect files if production
+              if: env.IS_PRODUCTION == 'true'
+              run: |
+                  mkdir -p dist/zigbee-bridge-ultra-supported-devices
+                  cp dist/index.html dist/zigbee-bridge-ultra-supported-devices/index.html
+                  # Create redirect file for custom path
+                  echo '<!DOCTYPE html>
+                  <html lang="en">
+                    <head>
+                      <meta charset="UTF-8" />
+                      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                      <meta http-equiv="refresh" content="0; url=/zigbee-bridge-ultra-supported-devices">
+                      <title>Redirecting...</title>
+                      <script type="text/javascript">
+                        window.location.href = "/zigbee-bridge-ultra-supported-devices";
+                      </script>
+                    </head>
+                    <body>
+                      <p>If you are not redirected, click <a href="/zigbee-bridge-ultra-supported-devices">here</a>.</p>
+                    </body>
+                  </html>' > dist/index.html
+
+                  # Create 404.html redirect file
+                  echo '<!DOCTYPE html>
+                  <html lang="en">
+                    <head>
+                      <meta charset="UTF-8" />
+                      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                      <meta http-equiv="refresh" content="0; url=/zigbee-bridge-ultra-supported-devices">
+                      <title>Redirecting...</title>
+                      <script type="text/javascript">
+                        window.location.href = "/zigbee-bridge-ultra-supported-devices";
+                      </script>
+                    </head>
+                    <body>
+                      <p>If you are not redirected, click <a href="/zigbee-bridge-ultra-supported-devices">here</a>.</p>
+                    </body>
+                  </html>' > dist/404.html
 
             - name: Deploy to gh-pages
               uses: peaceiris/actions-gh-pages@v4

@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => {
                     data: {
                         buildTime: dayjs().tz('Asia/Shanghai').format('YYYY-MM-DD HH:mm:ss'),
                         version,
+                        base
                     },
                 },
             }),
