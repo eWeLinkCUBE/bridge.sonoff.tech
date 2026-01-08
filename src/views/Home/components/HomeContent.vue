@@ -5,12 +5,12 @@ import { CheckboxGroup } from 'ant-design-vue';
 import SearchInput from '@/components/SearchInput/Index.vue';
 import type { FilterValue } from 'ant-design-vue/es/table/interface';
 import type { FlatRow } from '@/types/data';
-import type { EnumFilters } from '@/workers/worker';
+import type { EnumFilters } from '@/types/data';
 import { loadData, fetchDistinct, queryRows } from '@/services/dataClient';
 import VirtualTable from '@/components/VirtualTable/Index.vue';
 import { useColumns, type GroupKey } from '@/hooks/useColumns';
 
-const { tableColumns, enums, enumOptions, groupVisibility, createDefaultEnums } = useColumns();
+const { tableColumns, enums, enumOptions, groupVisibility, SUPPORT_SEARCH_KEYS, createDefaultEnums } = useColumns();
 
 // 表头模块开关（大分组显隐），与列定义中的 groupKey 对应
 const groupOptions: { label: string; value: GroupKey }[] = [
@@ -66,7 +66,7 @@ onMounted(async () => {
     loading.value = true;
     error.value = null;
     try {
-        await loadData();
+        await loadData(SUPPORT_SEARCH_KEYS);
         enumOptions.value = await fetchDistinct();
         await runQuery(true);
     } catch (e: any) {

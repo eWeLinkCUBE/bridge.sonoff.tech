@@ -1,26 +1,27 @@
 import type { ColumnsType, ColumnType } from 'ant-design-vue/es/table';
-import { Input, Button, Checkbox } from 'ant-design-vue';
 import type { FlatRow } from '@/types/data';
 import correct from '@/assets/img/correct.png';
 import wrong from '@/assets/img/wrong.png';
-import searchIcon from '@/assets/img/search.png';
 import Cluster from '@/components/business/MatterCluster.vue';
 import MatterThirdPartAppCluster from '@/components/business/MatterThirdPartAppCluster.vue';
 import EwelinkCapabilities from '@/components/business/EwelinkCapabilities.vue';
 import { ref, computed } from 'vue';
 import { Popover } from 'ant-design-vue';
-import { type EnumFilters, type EnumOptionMap } from '@/workers/worker';
+import { type EnumFilters, type EnumOptionMap } from '@/types/data';
 import { h } from 'vue';
 import type { FilterDropdownProps } from 'ant-design-vue/es/table/interface';
+import FilterDropdown from '@/components/FilterDropdown/Index.vue';
 
 export type GroupKey = 'ewelink' | 'matter' | 'homeAssistant';
 
-type ColumnWithGroup = ColumnType<FlatRow> & { groupKey?: GroupKey; spanStrategy?: SpanStrategy };
+type ColumnWithGroup = ColumnType<FlatRow> & { groupKey?: GroupKey };
 
 // 筛选项的显示数量限制，每次显示更多也依照该增量展开，保持体验一致
 const MAX_FILTER_OPTIONS = 80;
 
 const groupVisibility = ref<GroupKey[]>(['ewelink', 'matter', 'homeAssistant']);
+
+const SUPPORT_SEARCH_KEYS: Array<keyof FlatRow> = ['deviceModel', 'deviceType'];
 
 /**  */
 const enumFilterSearch = ref<Partial<Record<keyof EnumFilters, string>>>({});
@@ -103,35 +104,11 @@ const titleTipMap: Record<string, string> = {
     googleSupported: 'Google Home Features',
     smartThingsSupported: 'SmartThings Features',
     alexaSupported: 'Alexa Features',
-    homeAssistantSupported: 'Home Assistant Support',
     homeAssistantEntities: 'Home Assistant Entity',
+    homeAssistantSupported: 'Home Assistant Support',
 };
 
-const enumColumnMap: Record<string, keyof EnumFilters> = {
-    deviceModel: 'deviceModel',
-    deviceType: 'deviceType',
-    deviceBrand: 'brand',
-    deviceCategory: 'category',
-    ewelinkCapabilities: 'ewelinkCapabilities',
-    matterDeviceType: 'matterDeviceType',
-    matterProtocolVersion: 'matterProtocolVersion',
-    matterSupportedClusters: 'matterSupportedClusters',
-    appleSupported: 'appleSupported',
-    googleSupported: 'googleSupported',
-    smartThingsSupported: 'smartThingsSupported',
-    alexaSupported: 'alexaSupported',
-    homeAssistantEntities: 'homeAssistantEntities',
-};
-
-const booleanColumnMap: Record<string, keyof EnumFilters> = {
-    ewelinkSupported: 'ewelinkSupported',
-    matterSupported: 'matterSupported',
-    homeAssistantSupported: 'homeAssistantSupported',
-};
-
-type SpanStrategy = 'mergeCell' | false;
-
-const createColumn = (key: keyof FlatRow | string, title: string, options: Partial<ColumnType<FlatRow>> = {}, span: SpanStrategy = false): ColumnWithGroup => ({
+const createColumn = (key: keyof FlatRow | string, title: string, options: Partial<ColumnType<FlatRow>> = {}): ColumnWithGroup => ({
     key,
     dataIndex: key as ColumnType<FlatRow>['dataIndex'],
     title: () => {
@@ -146,71 +123,24 @@ const createColumn = (key: keyof FlatRow | string, title: string, options: Parti
         );
     },
     align: 'left',
-    spanStrategy: span,
-    customCell:
-        span === false
-            ? undefined
-            : (record: FlatRow) => ({
-                rowSpan: record.deviceInfoRowSpan ?? 1,
-            }),
     ...options,
 });
 
-const flattenLeafColumns = (cols: ColumnsType<FlatRow>): ColumnWithGroup[] => {
-    const result: ColumnWithGroup[] = [];
-    cols.forEach((col) => {
-        if ('children' in col && col.children) {
-            result.push(...flattenLeafColumns(col.children));
-        } else {
-            result.push(col as ColumnWithGroup);
-        }
-    });
-    return result;
-};
-
-const shouldDisableDeviceInfoSpan = (cols: ColumnsType<FlatRow>) => {
-    const leaves = flattenLeafColumns(cols);
-    const hasDeviceInfoSpan = leaves.some((col) => col.spanStrategy === 'mergeCell');
-    const hasNonDeviceInfoSpan = leaves.some((col) => col.spanStrategy !== 'mergeCell');
-    return hasDeviceInfoSpan && !hasNonDeviceInfoSpan;
-};
-
-const stripDeviceInfoSpan = (cols: ColumnsType<FlatRow>): ColumnWithGroup[] =>
-    cols.map((col) => {
-        if ('children' in col && col.children) {
-            return { ...(col as ColumnWithGroup), children: stripDeviceInfoSpan(col.children) };
-        }
-        const leaf = col as ColumnWithGroup;
-        if (leaf.spanStrategy !== 'mergeCell') return leaf;
-        const { customCell, ...rest } = leaf;
-        return { ...rest, customCell: undefined } as ColumnWithGroup;
-    });
-
 const deviceInfoColumns: ColumnsType<FlatRow> = [
-    createColumn('deviceType', 'Type', { width: 130, customRender: ({ record }) => record.deviceType }, 'mergeCell'),
-    createColumn('deviceBrand', 'Brand', { width: 130, customRender: ({ record }) => record.deviceBrand }, 'mergeCell'),
-    createColumn('deviceCategory', 'Category', { width: 130, customRender: ({ record }) => record.deviceCategory }, 'mergeCell'),
+    createColumn('deviceType', 'Type', { width: 130, customRender: ({ record }) => record.deviceType }),
+    createColumn('deviceBrand', 'Brand', { width: 130, customRender: ({ record }) => record.deviceBrand }),
+    createColumn('deviceCategory', 'Category', { width: 130, customRender: ({ record }) => record.deviceCategory }),
 ];
 
 const ewelinkColumns: ColumnsType<FlatRow> = [
-    createColumn(
-        'ewelinkSupported',
-        'Sync to eWeLink',
-        {
-            width: 166,
-            customRender: ({ record }) => boolIcon(record.ewelinkSupported),
-        },
-        'mergeCell'
-    ),
-    createColumn(
-        'ewelinkCapabilities',
-        'Capabilities of eWeLink',
-        {
-            width: 280,
-            customRender: ({ record }) => ewelinkCapabilitiesTransform(record.ewelinkCapabilities, record.ewelinkSupported),
-        },
-        'mergeCell'
-    ),
+    createColumn('ewelinkSupported', 'Sync to eWeLink', {
+        width: 166,
+        customRender: ({ record }) => boolIcon(record.ewelinkSupported),
+    }),
+    createColumn('ewelinkCapabilities', 'Capabilities of eWeLink', {
+        width: 280,
+        customRender: ({ record }) => ewelinkCapabilitiesTransform(record.ewelinkCapabilities, record.ewelinkSupported),
+    }),
 ];
 
 const matterColumns: ColumnsType<FlatRow> = [
@@ -218,53 +148,28 @@ const matterColumns: ColumnsType<FlatRow> = [
         width: 166,
         customRender: ({ record }) => boolIcon(record.matterSupported),
     }),
-    createColumn('matterDeviceType', 'Matter Device Type', { width: 200, customRender: ({ record }) => record.matterDeviceType || 'Not Yet Supported' }, false),
-    createColumn(
-        'matterSupportedClusters',
-        'Cluster',
-        {
-            width: 400,
-            customRender: ({ record }) => stringifyClusterInfo(record.matterSupportedClusters, record.matterUnsupportedClusters),
-        },
-        false
-    ),
-    createColumn('matterProtocolVersion', 'Matter Version', { width: 150, customRender: ({ record }) => record.matterProtocolVersion || 'N/A' }, false),
-    createColumn(
-        'appleSupported',
-        'Apple Home',
-        {
-            width: 300,
-            customRender: ({ record }) => withNotes(record, 'appleSupported', 'appleNotes'),
-        },
-        false
-    ),
-    createColumn(
-        'googleSupported',
-        'Google Home',
-        {
-            width: 300,
-            customRender: ({ record }) => withNotes(record, 'googleSupported', 'googleNotes'),
-        },
-        false
-    ),
-    createColumn(
-        'smartThingsSupported',
-        'SmartThings',
-        {
-            width: 300,
-            customRender: ({ record }) => withNotes(record, 'smartThingsSupported', 'smartThingsNotes'),
-        },
-        false
-    ),
-    createColumn(
-        'alexaSupported',
-        'Alexa',
-        {
-            width: 300,
-            customRender: ({ record }) => withNotes(record, 'alexaSupported', 'alexaNotes'),
-        },
-        false
-    ),
+    createColumn('matterDeviceType', 'Matter Device Type', { width: 200, customRender: ({ record }) => record.matterDeviceType || 'Not Yet Supported' }),
+    createColumn('matterSupportedClusters', 'Cluster', {
+        width: 400,
+        customRender: ({ record }) => stringifyClusterInfo(record.matterSupportedClusters, record.matterUnsupportedClusters),
+    }),
+    createColumn('matterProtocolVersion', 'Matter Version', { width: 150, customRender: ({ record }) => record.matterProtocolVersion || 'N/A' }),
+    createColumn('appleSupported', 'Apple Home', {
+        width: 300,
+        customRender: ({ record }) => withNotes(record, 'appleSupported', 'appleNotes'),
+    }),
+    createColumn('googleSupported', 'Google Home', {
+        width: 300,
+        customRender: ({ record }) => withNotes(record, 'googleSupported', 'googleNotes'),
+    }),
+    createColumn('smartThingsSupported', 'SmartThings', {
+        width: 300,
+        customRender: ({ record }) => withNotes(record, 'smartThingsSupported', 'smartThingsNotes'),
+    }),
+    createColumn('alexaSupported', 'Alexa', {
+        width: 300,
+        customRender: ({ record }) => withNotes(record, 'alexaSupported', 'alexaNotes'),
+    }),
 ];
 
 const homeAssistantColumns: ColumnsType<FlatRow> = [
@@ -380,112 +285,31 @@ const renderFilterDropdown = (enumKey: keyof EnumFilters) => (props: FilterDropd
         props.clearFilters?.();
     };
 
-    return h('div', { class: 'ant-dropdown ant-table-filter-dropdown custom-filter-dropdown' }, [
-        h('div', { class: 'ant-table-filter-dropdown-search' }, [
-            h(
-                Input,
-                {
-                    size: 'small',
-                    allowClear: true,
-                    placeholder: 'Enter Keyword to Search',
-                    value: search,
-                    'onUpdate:value': (val: string) => {
-                        enumFilterSearch.value = { ...enumFilterSearch.value, [enumKey]: val };
-                        resetEnumFilterLimit(enumKey);
-                    },
-                    style: {
-                        height: '32px',
-                    },
-                },
-                {
-                    prefix: () =>
-                        h('img', {
-                            src: searchIcon,
-                            alt: 'search',
-                            style: {
-                                width: '14px',
-                                height: '14px',
-                            },
-                        }),
-                }
-            ),
-        ]),
-        h(
-            'div',
-            {
-                class: 'ant-dropdown-menu ant-dropdown-menu-root ant-table-filter-dropdown-menu filter-menu',
+    return h(
+        FilterDropdown,
+        {
+            search,
+            options,
+            selectedKeys,
+            isAllChecked,
+            isAllIndeterminate,
+            hasMore,
+            total,
+            limit,
+            'onUpdate:search': (val: string) => {
+                enumFilterSearch.value = { ...enumFilterSearch.value, [enumKey]: val };
+                resetEnumFilterLimit(enumKey);
             },
-            [
-                h(
-                    'label',
-                    {
-                        class: 'ant-dropdown-menu-item filter-menu-item filter-menu-item__all',
-                    },
-                    [
-                        h(Checkbox, {
-                            checked: isAllChecked,
-                            indeterminate: isAllIndeterminate,
-                            onChange: (e: any) => toggleAll(e.target.checked),
-                        }),
-                        h('span', { class: 'filter-menu-text' }, 'All'),
-                    ]
-                ),
-                options.length
-                    ? options.map((opt) =>
-                        h(
-                            'label',
-                            {
-                                key: opt.value,
-                                class: 'ant-dropdown-menu-item filter-menu-item',
-                            },
-                            [
-                                h(Checkbox, {
-                                    checked: selectedKeys.includes(opt.value),
-                                    onChange: (e: any) => toggleValue(opt.value, e.target.checked),
-                                }),
-                                h('span', { class: 'filter-menu-text' }, [formatFilterLabel(enumKey, opt.value), ` (${opt.count})`]),
-                            ]
-                        )
-                    )
-                    : h('div', { class: 'filter-empty' }, 'No Results Found'),
-            ]
-        ),
-        hasMore
-            ? h(
-                'div',
-                { class: 'filter-more' },
-                h(
-                    Button,
-                    {
-                        type: 'link',
-                        size: 'small',
-                        onClick: () => increaseEnumFilterLimit(enumKey),
-                    },
-                    () => `See More (${Math.min(limit, total)}/${total})`
-                )
-            )
-            : null,
-        h('div', { class: 'ant-table-filter-dropdown-btns' }, [
-            h(
-                Button,
-                {
-                    size: 'small',
-                    type: 'link',
-                    onClick: clear,
-                },
-                () => 'Reset'
-            ),
-            h(
-                Button,
-                {
-                    type: 'primary',
-                    size: 'small',
-                    onClick: () => props.confirm?.(),
-                },
-                () => 'Confirm'
-            ),
-        ]),
-    ]);
+            onToggleValue: toggleValue,
+            onToggleAll: toggleAll,
+            onClear: clear,
+            onConfirm: () => props.confirm?.(),
+            onLoadMore: () => increaseEnumFilterLimit(enumKey),
+        },
+        {
+            label: ({ value }: { value: string }) => formatFilterLabel(enumKey, value),
+        }
+    );
 };
 
 /** 在列定义上再注入 antd 筛选能力、筛选项以及相关配置 */
@@ -500,7 +324,7 @@ const enhanceColumns = (cols: ColumnsType<FlatRow>): ColumnsType<FlatRow> => {
         if (!key) {
             throw new Error('每个需要筛选的列都必须提供唯一 key');
         }
-        const enumKey = enumColumnMap[key] || booleanColumnMap[key];
+        const enumKey = key as keyof EnumFilters;
         if (!enumKey) return leaf;
         const opts = getColumnFilterOptions(enumKey);
         const filters = opts.map((option) => ({
@@ -528,7 +352,7 @@ const enhanceColumns = (cols: ColumnsType<FlatRow>): ColumnsType<FlatRow> => {
 
 export const useColumns = () => {
     const baseColumns: ColumnsType<FlatRow> = [
-        createColumn('deviceModel', 'Model', { width: 160, fixed: true, customRender: ({ record }) => record.deviceModel }, 'mergeCell'),
+        createColumn('deviceModel', 'Model', { width: 160, fixed: true, customRender: ({ record }) => record.deviceModel }),
         {
             title: 'Device information',
             key: 'group-device',
@@ -556,12 +380,11 @@ export const useColumns = () => {
 
     const tableColumns = computed(() => {
         const filtered = filterColumnsByGroup(baseColumns, groupVisibility.value);
-        const disableSpan = shouldDisableDeviceInfoSpan(filtered);
-        const visibleColumns = disableSpan ? stripDeviceInfoSpan(filtered) : filtered;
-        return enhanceColumns(visibleColumns);
+        return enhanceColumns(filtered);
     });
 
     return {
+        SUPPORT_SEARCH_KEYS,
         tableColumns,
         enums,
         enumOptions,
