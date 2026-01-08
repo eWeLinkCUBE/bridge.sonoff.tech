@@ -2,102 +2,31 @@
 import { expose } from 'comlink';
 import Fuse from 'fuse.js';
 import { flattenDevice } from '../utils/flatten';
-import type { RawData, FlatRow } from '../types/data';
-import { sortByDeviceInfoGroup } from '../utils/deviceInfoGrouping';
-
-/** 每个列的筛选值 */
-export interface EnumFilters {
-    deviceModel?: string[];
-    deviceType?: string[];
-    brand?: string[];
-    category?: string[];
-    ewelinkSupported?: boolean[];
-    ewelinkCapabilities?: string[];
-    matterSupported?: boolean[];
-    matterDeviceType?: string[];
-    matterProtocolVersion?: string[];
-    matterSupportedClusters?: string[];
-    appleSupported?: string[];
-    googleSupported?: string[];
-    smartThingsSupported?: string[];
-    alexaSupported?: string[];
-    homeAssistantSupported?: boolean[];
-    homeAssistantEntities?: string[];
-}
-
-/** 每个筛选值的内容以及数量 */
-export interface EnumOption {
-    value: string;
-    count: number;
-}
-
-/** 每个筛选值 */
-export type EnumOptionMap = {
-    deviceModel: EnumOption[];
-    deviceType: EnumOption[];
-    brand: EnumOption[];
-    category: EnumOption[];
-    ewelinkSupported: EnumOption[];
-    ewelinkCapabilities: EnumOption[];
-    matterSupported: EnumOption[];
-    matterDeviceType: EnumOption[];
-    matterProtocolVersion: EnumOption[];
-    matterSupportedClusters: EnumOption[];
-    appleSupported: EnumOption[];
-    googleSupported: EnumOption[];
-    smartThingsSupported: EnumOption[];
-    alexaSupported: EnumOption[];
-    homeAssistantSupported: EnumOption[];
-    homeAssistantEntities: EnumOption[];
-};
-
-export interface SortSpec {
-    id: keyof FlatRow;
-    desc?: boolean;
-}
-
-export interface QueryInput {
-    q?: string;
-    enums?: EnumFilters;
-    sort?: SortSpec[];
-    page?: number;
-    pageSize?: number;
-}
+import type { RawData, FlatRow, EnumFilters, EnumOption, EnumOptionMap, SortSpec, QueryInput } from '../types/data';
+import { toString } from 'lodash-es';
 
 const MAX_FUSE_QUERY_LENGTH = 40;
-const SEARCH_KEYS = ['searchText'] as const;
 
+/** 全量数据缓存 */
 let rows: FlatRow[] = [];
+
+/** 搜索用 */
 let fuse: Fuse<FlatRow> | null = null;
 
-const applyRowSpanForPage = (pageRows: FlatRow[]): FlatRow[] => {
-    const cloned = pageRows.map((row) => ({ ...row }));
-    let cursor = 0;
-    while (cursor < cloned.length) {
-        const head = cloned[cursor]!;
-        let span = 1;
-        while (cursor + span < cloned.length && cloned[cursor + span]!.deviceInfoGroupId === head.deviceInfoGroupId) {
-            span += 1;
-        }
-        head.deviceInfoRowSpan = span;
-        for (let offset = 1; offset < span; offset += 1) {
-            cloned[cursor + offset]!.deviceInfoRowSpan = 0;
-        }
-        cursor += span;
-    }
-    return cloned;
-};
+/** 模糊搜索涵盖的键值 */
+let searchKeys: Array<keyof FlatRow> = [];
 
-function buildFuse() {
-    const fuseKeys = SEARCH_KEYS.map((key) => ({
+function buildFuse(keys: (keyof FlatRow)[]) {
+    searchKeys = keys;
+    const fuseKeys = searchKeys.map((key) => ({
         name: key,
-        getFn: (row: FlatRow) => row[key as keyof FlatRow] as string,
+        getFn: (row: FlatRow) => toString(row[key]),
     }));
     fuse = new Fuse(rows, {
         includeMatches: false,
         threshold: 0.3,
         ignoreLocation: true,
-        keys: fuseKeys as any,
+        keys: fuseKeys,
     });
 }
 
@@ -156,17 +85,18 @@ function sortRows(data: FlatRow[], sort?: SortSpec[]): FlatRow[] {
 }
 
 const api = {
-    async load(url: string) {
+    async load(url: string, keys: (keyof FlatRow)[]) {
         const res = await fetch(url, { cache: 'no-cache' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const raw: RawData = await res.json();
         rows = raw.flatMap((item, idx) => flattenDevice(item, idx));
-        buildFuse();
+        buildFuse(keys);
         return { count: rows.length };
     },
 
     async query(input: QueryInput): Promise<{ rows: FlatRow[]; total: number }> {
         const { q, enums, sort, page = 1, pageSize = 10 } = input || {};
+        // 先处理搜索逻辑
         let base: FlatRow[];
         if (q && q.trim()) {
             const qStr = q.trim().toLowerCase();
@@ -176,13 +106,20 @@ const api = {
                 const fuseResult = fuse!.search(qStr);
                 base = fuseResult.map((result) => result.item);
             } else {
-                base = rows.filter((r) => r.searchText.includes(qStr));
+                base = rows.filter((r) => {
+                    return searchKeys.some((key) => {
+                        const value = toString(r[key]);
+                        return value.toLowerCase().includes(qStr);
+                    });
+                });
             }
         } else {
             base = rows;
         }
+
+        // 再处理列筛选逻辑
         const filtered = base.filter((r) => passEnums(r, enums));
-        const sorted = sort && sort.length ? sortRows(filtered, sort) : sortByDeviceInfoGroup(filtered);
+        const sorted = sort && sort.length ? sortRows(filtered, sort) : filtered;
 
         const total = sorted.length;
         const effectivePageSize = pageSize > 0 ? pageSize : 10;
@@ -190,9 +127,7 @@ const api = {
         const currentPage = Math.min(Math.max(1, page), maxPage);
         const start = (currentPage - 1) * effectivePageSize;
         const slice = sorted.slice(start, start + effectivePageSize);
-        const pageRows = applyRowSpanForPage(slice);
-
-        return { rows: pageRows, total };
+        return { rows: slice, total };
     },
 
     async distinct(): Promise<EnumOptionMap> {

@@ -2,11 +2,11 @@ import type { FlatRow, RawDevice, MatterDevice, ThirdPartyAppSupport } from '../
 
 const normalizeList = (list?: string[] | null) => (list && list.length ? list : []);
 
-const buildSearchText = (parts: Array<string | undefined | null>) =>
-    parts
-        .flatMap((part) => (Array.isArray(part) ? part : [part]))
-        .filter((segment): segment is string => Boolean(segment && segment.trim()))
-        .join(' ');
+// const buildSearchText = (parts: Array<string | undefined | null>) =>
+//     parts
+//         .flatMap((part) => (Array.isArray(part) ? part : [part]))
+//         .filter((segment): segment is string => Boolean(segment && segment.trim()))
+//         .join(' ');
 
 function mapThirdParty(supports: ThirdPartyAppSupport[] | undefined, appName: string): { supported: string[]; notes: string[] } {
     const found = supports?.find((app) => app.appName === appName);
@@ -34,22 +34,22 @@ export function flattenDevice(device: RawDevice, index: number): FlatRow[] {
         const supportedClusters = normalizeList(matterDev?.supportedClusters);
         const unsupportedClusters = normalizeList(matterDev?.unsupportedClusters);
 
-        const searchText = buildSearchText([
-            device.deviceInfo.model,
-            device.deviceInfo.type,
-            device.deviceInfo.brand,
-            device.deviceInfo.category,
-            ...(device.ewelinkCloud?.capabilities ?? []),
-            matterDev?.deviceType,
-            matterDev?.protocolVersion,
-            supportedClusters.join(' '),
-            unsupportedClusters.join(' '),
-            apple.supported.join(' '),
-            google.supported.join(' '),
-            smart.supported.join(' '),
-            alexa.supported.join(' '),
-            ...(device.homeAssistant?.entities ?? []),
-        ]);
+        // const searchText = buildSearchText([
+        //     device.deviceInfo.model,
+        //     device.deviceInfo.type,
+        //     device.deviceInfo.brand,
+        //     device.deviceInfo.category,
+        //     ...(device.ewelinkCloud?.capabilities ?? []),
+        //     matterDev?.deviceType,
+        //     matterDev?.protocolVersion,
+        //     supportedClusters.join(' '),
+        //     unsupportedClusters.join(' '),
+        //     apple.supported.join(' '),
+        //     google.supported.join(' '),
+        //     smart.supported.join(' '),
+        //     alexa.supported.join(' '),
+        //     ...(device.homeAssistant?.entities ?? []),
+        // ]);
 
         return {
             rowId: `${parentId}-${idx}`,
@@ -58,8 +58,8 @@ export function flattenDevice(device: RawDevice, index: number): FlatRow[] {
             deviceInfoGroupId: parentId,
             deviceInfoGroupSize: matterDevices.length,
             deviceInfoGroupIndex: idx,
-            deviceInfoRowSpan: idx === 0 ? matterDevices.length : 0,
-            searchText: searchText.toLowerCase(),
+            // deviceInfoRowSpan: idx === 0 ? matterDevices.length : 0,
+            // searchText,
             deviceModel: device.deviceInfo.model,
             deviceType: device.deviceInfo.type,
             deviceBrand: device.deviceInfo.brand,

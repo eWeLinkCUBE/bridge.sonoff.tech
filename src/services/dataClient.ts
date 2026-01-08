@@ -1,7 +1,7 @@
 import type { Remote } from 'comlink';
 import { wrap } from 'comlink';
-import type { WorkerAPI, QueryInput, EnumOptionMap } from '../workers/worker';
-import type { FlatRow } from '../types/data';
+import type { WorkerAPI } from '../workers/worker';
+import type { FlatRow, EnumOptionMap, QueryInput } from '../types/data';
 
 const DATA_URL = new URL('../assets/data/large.json?url', import.meta.url).href;
 
@@ -15,9 +15,9 @@ export async function getWorker(): Promise<Remote<WorkerAPI>> {
     return remote;
 }
 
-export async function loadData(): Promise<{ count: number }> {
+export async function loadData(keys: Array<keyof FlatRow>): Promise<{ count: number }> {
     const w = await getWorker();
-    return w.load(DATA_URL);
+    return w.load(DATA_URL, keys);
 }
 
 export async function fetchDistinct(): Promise<EnumOptionMap> {
