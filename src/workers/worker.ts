@@ -24,8 +24,9 @@ function buildFuse(keys: (keyof FlatRow)[]) {
     }));
     fuse = new Fuse(rows, {
         includeMatches: false,
-        threshold: 0.3,
+        threshold: 0.0,
         ignoreLocation: true,
+        useExtendedSearch: true,
         keys: fuseKeys,
     });
 }
