@@ -1,102 +1,18 @@
 <script setup lang="ts">
-import { ref, onMounted, toRaw, reactive } from 'vue';
-import { useDebounceFn } from '@vueuse/core';
-import { CheckboxGroup } from 'ant-design-vue';
-import SearchInput from '@/components/SearchInput/Index.vue';
+import { onMounted } from 'vue';
 import type { FilterValue } from 'ant-design-vue/es/table/interface';
-import type { FlatRow } from '@/types/data';
 import type { EnumFilters } from '@/types/data';
-import { loadData, fetchDistinct, queryRows } from '@/services/dataClient';
 import VirtualTable from '@/components/VirtualTable/Index.vue';
-import { useColumns, type GroupKey } from '@/hooks/useColumns';
+import { useColumns } from '@/hooks/useColumns';
+import HeaderFilter from './HeaderFilter.vue';
 
-const { tableColumns, enums, enumOptions, groupVisibility, SUPPORT_SEARCH_KEYS, createDefaultEnums } = useColumns();
+const { tableColumns, enums, createDefaultEnums, init, rows, loading, pagination, runQuery, rowKey } = useColumns();
 
-// 表头模块开关（大分组显隐），与列定义中的 groupKey 对应
-const groupOptions: { label: string; value: GroupKey }[] = [
-    { value: 'ewelink', label: 'eWeLink' },
-    { value: 'matter', label: 'Matter' },
-    { value: 'homeAssistant', label: 'Home Assistant' },
-];
+// const debouncedQuery = useDebounceFn(() => runQuery(true), 400);
 
-const rows = ref<FlatRow[]>([]);
-const total = ref(0);
-const loading = ref(false);
-const error = ref<string | null>(null);
-const searchText = ref('');
-const pagination = reactive({
-    current: 1,
-    pageSize: 20,
-    showQuickJumper: true,
-    showSizeChanger: true,
-    total: total.value,
-    showTotal: (t: number) => `Total: ${t}`,
+onMounted(() => {
+    init();
 });
-const rowKey = (row: FlatRow) => row.rowId;
-
-// 避免响应式代理传给 worker 造成结构化克隆失败
-const cloneForWorker = <T>(value: T): T => structuredClone(toRaw(value));
-
-// 查询走 worker，支持搜索 + 筛选；debounce 在输入时触发
-const runQuery = async (resetPage = false) => {
-    if (resetPage) {
-        pagination.current = 1;
-    }
-    loading.value = true;
-    error.value = null;
-    try {
-        const res = await queryRows({
-            q: searchText.value,
-            enums: cloneForWorker(enums.value),
-            page: pagination.current ?? 1,
-            pageSize: pagination.pageSize ?? 20,
-        });
-        rows.value = res.rows;
-        total.value = res.total;
-        pagination.total = res.total;
-    } catch (e: any) {
-        error.value = e?.message ?? String(e);
-    } finally {
-        loading.value = false;
-    }
-};
-const debouncedQuery = useDebounceFn(() => runQuery(true), 400);
-
-onMounted(async () => {
-    loading.value = true;
-    error.value = null;
-    try {
-        await loadData(SUPPORT_SEARCH_KEYS);
-        enumOptions.value = await fetchDistinct();
-        await runQuery(true);
-    } catch (e: any) {
-        error.value = e?.message ?? String(e);
-    } finally {
-        loading.value = false;
-    }
-});
-
-const enumColumnMap: Record<string, keyof EnumFilters> = {
-    deviceModel: 'deviceModel',
-    deviceType: 'deviceType',
-    deviceBrand: 'brand',
-    deviceCategory: 'category',
-    ewelinkCapabilities: 'ewelinkCapabilities',
-    matterDeviceType: 'matterDeviceType',
-    matterProtocolVersion: 'matterProtocolVersion',
-    matterSupportedClusters: 'matterSupportedClusters',
-    appleSupported: 'appleSupported',
-    googleSupported: 'googleSupported',
-    smartThingsSupported: 'smartThingsSupported',
-    alexaSupported: 'alexaSupported',
-    homeAssistantEntities: 'homeAssistantEntities',
-};
-
-const booleanColumnMap: Record<string, keyof EnumFilters> = {
-    ewelinkSupported: 'ewelinkSupported',
-    matterSupported: 'matterSupported',
-    homeAssistantSupported: 'homeAssistantSupported',
-};
 
 // antd change 事件只告诉我们列 key -> 选中的值，需要映射回 worker 的 enums 结构
 function applyEnumFiltersFromTable(filters: Record<string, FilterValue | null | undefined>) {
@@ -105,15 +21,14 @@ function applyEnumFiltersFromTable(filters: Record<string, FilterValue | null | 
     const assignValues = (filterKey: keyof EnumFilters, values: (string | number | boolean)[] | null | undefined) => {
         if (!values || values.length === 0) return;
         if (filterKey === 'ewelinkSupported' || filterKey === 'matterSupported' || filterKey === 'homeAssistantSupported') {
-            next[filterKey] = values.map((val) => String(val) === 'true') as any;
+            next[filterKey] = values.map((val) => String(val) === 'true');
         } else {
             next[filterKey] = values.map((val) => String(val));
         }
     };
     Object.entries(filters).forEach(([columnKey, value]) => {
-        const enumKey = enumColumnMap[columnKey] || booleanColumnMap[columnKey];
-        if (!enumKey) return;
-        assignValues(enumKey, value || undefined);
+        const enumKey = columnKey;
+        assignValues(enumKey as keyof EnumFilters, value || undefined);
     });
     if (JSON.stringify(next) !== JSON.stringify(enums.value)) {
         enums.value = next;
@@ -136,18 +51,7 @@ const handleTableChange = (pager: any, filters: Record<string, FilterValue | nul
 
 <template>
     <section class="page-section">
-        <div class="toolbar">
-            <div class="toolbar-filter">
-                <CheckboxGroup v-model:value="groupVisibility" name="checkboxgroup" :options="groupOptions" />
-            </div>
-            <div class="toolbar-search">
-                <SearchInput v-model:value="searchText" placeholder="Enter Keyword to Search" style="width: 360px" allow-clear @input="debouncedQuery()" />
-                <span class="status-pill">
-                    <span class="status-dot" />
-                    <span class="status-count">Total: {{ total }}</span>
-                </span>
-            </div>
-        </div>
+        <HeaderFilter></HeaderFilter>
 
         <div class="data-table-shell">
             <div class="data-table-body">
@@ -177,16 +81,6 @@ const handleTableChange = (pager: any, filters: Record<string, FilterValue | nul
 }
 
 .toolbar {
-    margin-bottom: 20px;
-    padding: 14px 18px;
-    border-radius: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 12px 12px 12px 12px;
-    gap: 16px;
-
     .toolbar-filter {
         &_title {
             font-size: 14px;

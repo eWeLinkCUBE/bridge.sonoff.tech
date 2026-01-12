@@ -13,6 +13,9 @@ let rows: FlatRow[] = [];
 /** 搜索用 */
 let fuse: Fuse<FlatRow> | null = null;
 
+/** 数据更新时间 */
+let updateTime: number = 0;
+
 /** 模糊搜索涵盖的键值 */
 let searchKeys: Array<keyof FlatRow> = [];
 
@@ -44,9 +47,9 @@ function passEnums(row: FlatRow, enums?: EnumFilters): boolean {
         return selected.some((val) => values.includes(val));
     };
     if (!includes(enums.deviceModel, row.deviceModel)) return false;
-    if (!includes(enums.deviceType, row.deviceType)) return false;
-    if (!includes(enums.brand, row.deviceBrand)) return false;
-    if (!includes(enums.category, row.deviceCategory)) return false;
+    if (!includes(enums.deviceSource, row.deviceSource)) return false;
+    if (!includes(enums.deviceBrand, row.deviceBrand)) return false;
+    if (!includes(enums.deviceCategory, row.deviceCategory)) return false;
     if (enums.ewelinkSupported?.length) {
         if (!enums.ewelinkSupported.includes(row.ewelinkSupported)) return false;
     }
@@ -90,12 +93,14 @@ const api = {
         const res = await fetch(url, { cache: 'no-cache' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const raw: RawData = await res.json();
-        rows = raw.flatMap((item, idx) => flattenDevice(item, idx));
+        const { updateTime: _updateTime, supportDevices } = raw;
+        updateTime = _updateTime;
+        rows = supportDevices.flatMap((item, idx) => flattenDevice(item, idx));
         buildFuse(keys);
         return { count: rows.length };
     },
 
-    async query(input: QueryInput): Promise<{ rows: FlatRow[]; total: number }> {
+    async query(input: QueryInput): Promise<{ rows: FlatRow[]; total: number; updateTime: number }> {
         const { q, enums, sort, page = 1, pageSize = 10 } = input || {};
         // 先处理搜索逻辑
         let base: FlatRow[];
@@ -128,7 +133,7 @@ const api = {
         const currentPage = Math.min(Math.max(1, page), maxPage);
         const start = (currentPage - 1) * effectivePageSize;
         const slice = sorted.slice(start, start + effectivePageSize);
-        return { rows: slice, total };
+        return { rows: slice, total, updateTime };
     },
 
     async distinct(): Promise<EnumOptionMap> {
@@ -160,9 +165,9 @@ const api = {
 
         return {
             deviceModel: collect((row) => row.deviceModel),
-            deviceType: collect((row) => row.deviceType),
-            brand: collect((row) => row.deviceBrand),
-            category: collect((row) => row.deviceCategory),
+            deviceSource: collect((row) => row.deviceSource),
+            deviceBrand: collect((row) => row.deviceBrand),
+            deviceCategory: collect((row) => row.deviceCategory),
             ewelinkSupported: collect((row) => row.ewelinkSupported, true),
             ewelinkCapabilities: collectArray((row) => row.ewelinkCapabilities),
             matterSupported: collect((row) => row.matterSupported, true),
