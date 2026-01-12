@@ -43,7 +43,7 @@ import { useSlots, computed, ref, onMounted, nextTick, onBeforeUnmount, useAttrs
 import type { TableColumnType, TablePaginationConfig } from 'ant-design-vue';
 import { throttle } from 'lodash-es';
 
-const TABLE_HEADER_HEIGHT = '95px';
+const TABLE_HEADER_HEIGHT = '143px';
 
 const props = defineProps<{
     columns: TableColumnType[];

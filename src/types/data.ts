@@ -1,6 +1,6 @@
 export interface DeviceInfo {
     model: string;
-    type: string;
+    source: string;
     brand: string;
     category: string;
 }
@@ -41,7 +41,10 @@ export interface RawDevice {
     homeAssistant?: HomeAssistant;
 }
 
-export type RawData = RawDevice[];
+export type RawData = {
+    supportDevices: RawDevice[],
+    updateTime: number;
+};
 
 /**
  * 前端渲染使用的表格数据
@@ -56,7 +59,7 @@ export interface FlatRow {
     deviceInfoGroupIndex: number;
 
     deviceModel: string;
-    deviceType: string;
+    deviceSource: string;
     deviceBrand: string;
     deviceCategory: string;
 
@@ -84,9 +87,9 @@ export interface FlatRow {
 /** 表格中勾选好的筛选内容 */
 export type EnumFilters = Partial<{
     deviceModel: string[];
-    deviceType: string[];
-    brand: string[];
-    category: string[];
+    deviceSource: string[];
+    deviceBrand: string[];
+    deviceCategory: string[];
     ewelinkSupported: boolean[];
     ewelinkCapabilities: string[];
     matterSupported: boolean[];
@@ -110,9 +113,9 @@ export interface EnumOption {
 /** 每一列的筛选具体可筛选内容 */
 export type EnumOptionMap = {
     deviceModel: EnumOption[];
-    deviceType: EnumOption[];
-    brand: EnumOption[];
-    category: EnumOption[];
+    deviceSource: EnumOption[];
+    deviceBrand: EnumOption[];
+    deviceCategory: EnumOption[];
     ewelinkSupported: EnumOption[];
     ewelinkCapabilities: EnumOption[];
     matterSupported: EnumOption[];

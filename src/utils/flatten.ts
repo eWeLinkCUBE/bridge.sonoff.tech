@@ -34,23 +34,6 @@ export function flattenDevice(device: RawDevice, index: number): FlatRow[] {
         const supportedClusters = normalizeList(matterDev?.supportedClusters);
         const unsupportedClusters = normalizeList(matterDev?.unsupportedClusters);
 
-        // const searchText = buildSearchText([
-        //     device.deviceInfo.model,
-        //     device.deviceInfo.type,
-        //     device.deviceInfo.brand,
-        //     device.deviceInfo.category,
-        //     ...(device.ewelinkCloud?.capabilities ?? []),
-        //     matterDev?.deviceType,
-        //     matterDev?.protocolVersion,
-        //     supportedClusters.join(' '),
-        //     unsupportedClusters.join(' '),
-        //     apple.supported.join(' '),
-        //     google.supported.join(' '),
-        //     smart.supported.join(' '),
-        //     alexa.supported.join(' '),
-        //     ...(device.homeAssistant?.entities ?? []),
-        // ]);
-
         return {
             rowId: `${parentId}-${idx}`,
             parentId,
@@ -58,10 +41,8 @@ export function flattenDevice(device: RawDevice, index: number): FlatRow[] {
             deviceInfoGroupId: parentId,
             deviceInfoGroupSize: matterDevices.length,
             deviceInfoGroupIndex: idx,
-            // deviceInfoRowSpan: idx === 0 ? matterDevices.length : 0,
-            // searchText,
+            deviceSource: device.deviceInfo.source,
             deviceModel: device.deviceInfo.model,
-            deviceType: device.deviceInfo.type,
             deviceBrand: device.deviceInfo.brand,
             deviceCategory: device.deviceInfo.category,
             ewelinkSupported,
