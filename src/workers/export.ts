@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx-js-style';
 import type { FlatRow } from '../types/data';
+import { buildMergeRanges } from '@/utils/mergeCells';
 
 /**
  * 根据 Excel 模板生成导出 ArrayBuffer（保留表头样式；数据区统一水平/垂直居中 + 自动换行）
@@ -74,6 +75,10 @@ export async function buildExcelBufferByTemplate(rows: FlatRow[], templateUrl = 
     range.e.c = Math.max(range.e.c, sampleCols - 1);
 
     sheet['!ref'] = XLSX.utils.encode_range(range);
+
+    const mergeRanges = buildMergeRanges(rows, START_ROW - 1) as XLSX.Range[];
+    const existingMerges = (sheet['!merges'] ?? []) as XLSX.Range[];
+    sheet['!merges'] = existingMerges.concat(mergeRanges);
 
     // 4) 导出
     return XLSX.write(workbook, {
