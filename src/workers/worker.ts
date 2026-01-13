@@ -11,13 +11,13 @@ const MAX_FUSE_QUERY_LENGTH = 40;
 /** 全量数据缓存 */
 let rows: FlatRow[] = [];
 
-/** 搜索用 */
+/** 搜索 */
 let fuse: Fuse<FlatRow> | null = null;
 
 /** 数据更新时间 */
 let updateTime: number = 0;
 
-/** 模糊搜索涵盖的键值 */
+/** 模糊搜索涵盖的键*/
 let searchKeys: Array<keyof FlatRow> = [];
 
 function buildFuse(keys: (keyof FlatRow)[]) {
@@ -32,6 +32,22 @@ function buildFuse(keys: (keyof FlatRow)[]) {
         ignoreLocation: true,
         useExtendedSearch: true,
         keys: fuseKeys,
+    });
+}
+
+function filterBySearch(q?: string) {
+    if (!q || !q.trim()) return rows;
+    const qStr = q.trim().toLowerCase();
+    const useFuse = fuse && qStr.length <= MAX_FUSE_QUERY_LENGTH;
+    if (useFuse) {
+        const fuseResult = fuse!.search(qStr);
+        return fuseResult.map((result) => result.item);
+    }
+    return rows.filter((r) => {
+        return searchKeys.some((key) => {
+            const value = toString(r[key]);
+            return value.toLowerCase().includes(qStr);
+        });
     });
 }
 
@@ -104,25 +120,7 @@ const api = {
     async query(input: QueryInput): Promise<{ rows: FlatRow[]; total: number; updateTime: number }> {
         const { q, enums, sort, page = 1, pageSize = 10 } = input || {};
         // 先处理搜索逻辑
-        let base: FlatRow[];
-        if (q && q.trim()) {
-            const qStr = q.trim().toLowerCase();
-            // 为了优化性能，当搜索字符长度大于某个长度时，使用字符串匹配（To optimize performance, use string matching when the search character length is greater than a certain length）
-            const useFuse = fuse && qStr.length <= MAX_FUSE_QUERY_LENGTH;
-            if (useFuse) {
-                const fuseResult = fuse!.search(qStr);
-                base = fuseResult.map((result) => result.item);
-            } else {
-                base = rows.filter((r) => {
-                    return searchKeys.some((key) => {
-                        const value = toString(r[key]);
-                        return value.toLowerCase().includes(qStr);
-                    });
-                });
-            }
-        } else {
-            base = rows;
-        }
+        const base = filterBySearch(q);
 
         // 再处理列筛选逻辑
         const filtered = base.filter((r) => passEnums(r, enums));
@@ -137,26 +135,26 @@ const api = {
         return { rows: slice, total, updateTime };
     },
 
-    async distinct(): Promise<EnumOptionMap> {
+    async distinct(input?: Pick<QueryInput, 'q' | 'enums'>): Promise<EnumOptionMap> {
         const optionFromValue = (map: Map<string, number>): EnumOption[] =>
             Array.from(map.entries())
                 .map(([value, count]) => ({ value, count }))
                 .sort((a, b) => b.count - a.count);
 
-        const collect = (getter: (row: FlatRow) => string | boolean | undefined, booleanType = false) => {
+        const collect = (data: FlatRow[], getter: (row: FlatRow) => string | boolean | undefined) => {
             const counter = new Map<string, number>();
-            rows.forEach((row) => {
+            data.forEach((row) => {
                 const value = getter(row);
                 if (value === undefined) return;
-                const key = booleanType ? String(value) : String(value);
+                const key = String(value);
                 counter.set(key, (counter.get(key) ?? 0) + 1);
             });
             return optionFromValue(counter);
         };
 
-        const collectArray = (getter: (row: FlatRow) => string[]) => {
+        const collectArray = (data: FlatRow[], getter: (row: FlatRow) => string[]) => {
             const counter = new Map<string, number>();
-            rows.forEach((row) => {
+            data.forEach((row) => {
                 getter(row).forEach((item) => {
                     counter.set(item, (counter.get(item) ?? 0) + 1);
                 });
@@ -164,26 +162,39 @@ const api = {
             return optionFromValue(counter);
         };
 
+        const { q, enums } = input || {};
+        const base = filterBySearch(q);
+        const withoutKey = (key: keyof EnumFilters) => {
+            if (!enums) return;
+            const { [key]: _omit, ...rest } = enums as Record<string, unknown>;
+            return rest as EnumFilters;
+        };
+        const byOtherFilters = (key: keyof EnumFilters) => {
+            const active = withoutKey(key);
+            if (!active) return base;
+            return base.filter((row) => passEnums(row, active));
+        };
+
         return {
-            deviceModel: collect((row) => row.deviceModel),
-            deviceSource: collect((row) => row.deviceSource),
-            deviceBrand: collect((row) => row.deviceBrand),
-            deviceCategory: collect((row) => row.deviceCategory),
-            ewelinkSupported: collect((row) => row.ewelinkSupported, true),
-            ewelinkCapabilities: collectArray((row) => row.ewelinkCapabilities),
-            matterSupported: collect((row) => row.matterSupported, true),
-            matterDeviceType: collect((row) => row.matterDeviceType),
-            matterProtocolVersion: collect((row) => row.matterProtocolVersion),
-            matterSupportedClusters: collectArray((row) => row.matterSupportedClusters),
-            appleSupported: collectArray((row) => row.appleSupported),
-            googleSupported: collectArray((row) => row.googleSupported),
-            smartThingsSupported: collectArray((row) => row.smartThingsSupported),
-            alexaSupported: collectArray((row) => row.alexaSupported),
-            homeAssistantSupported: collect((row) => row.homeAssistantSupported, true),
-            homeAssistantEntities: collectArray((row) => row.homeAssistantEntities),
+            deviceModel: collect(byOtherFilters('deviceModel'), (row) => row.deviceModel),
+            deviceSource: collect(byOtherFilters('deviceSource'), (row) => row.deviceSource),
+            deviceBrand: collect(byOtherFilters('deviceBrand'), (row) => row.deviceBrand),
+            deviceCategory: collect(byOtherFilters('deviceCategory'), (row) => row.deviceCategory),
+            ewelinkSupported: collect(byOtherFilters('ewelinkSupported'), (row) => row.ewelinkSupported),
+            ewelinkCapabilities: collectArray(byOtherFilters('ewelinkCapabilities'), (row) => row.ewelinkCapabilities),
+            matterSupported: collect(byOtherFilters('matterSupported'), (row) => row.matterSupported),
+            matterDeviceType: collect(byOtherFilters('matterDeviceType'), (row) => row.matterDeviceType),
+            matterProtocolVersion: collect(byOtherFilters('matterProtocolVersion'), (row) => row.matterProtocolVersion),
+            matterSupportedClusters: collectArray(byOtherFilters('matterSupportedClusters'), (row) => row.matterSupportedClusters),
+            appleSupported: collectArray(byOtherFilters('appleSupported'), (row) => row.appleSupported),
+            googleSupported: collectArray(byOtherFilters('googleSupported'), (row) => row.googleSupported),
+            smartThingsSupported: collectArray(byOtherFilters('smartThingsSupported'), (row) => row.smartThingsSupported),
+            alexaSupported: collectArray(byOtherFilters('alexaSupported'), (row) => row.alexaSupported),
+            homeAssistantSupported: collect(byOtherFilters('homeAssistantSupported'), (row) => row.homeAssistantSupported),
+            homeAssistantEntities: collectArray(byOtherFilters('homeAssistantEntities'), (row) => row.homeAssistantEntities),
         };
     },
-    /** 生成导出文件的 Buffer */
+    /** 生成导出文件�?Buffer */
     async buildExcelBuf() {
         return await buildExcelBufferByTemplate(rows);
     },
@@ -191,3 +202,4 @@ const api = {
 
 export type WorkerAPI = typeof api;
 expose(api);
+

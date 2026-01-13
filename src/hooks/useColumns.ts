@@ -175,6 +175,10 @@ const isMergeOnlyColumns = (cols: ColumnsType<FlatRow>) => {
     return keys.every((key) => isMergeColumn(key));
 };
 
+const refreshEnumOptions = async () => {
+    enumOptions.value = await fetchDistinct({ q: searchText.value, enums: cloneForWorker(enums.value) });
+};
+
 // 查询走 worker，支持搜索 + 筛选；debounce 在输入时触发
 const runQuery = async (resetPage = false) => {
     if (resetPage) {
@@ -192,6 +196,7 @@ const runQuery = async (resetPage = false) => {
         rows.value = res.rows;
         total.value = res.total;
         pagination.total = res.total;
+        await refreshEnumOptions();
     } catch (e: any) {
         error.value = e?.message ?? String(e);
     } finally {
@@ -204,7 +209,7 @@ const init = async () => {
     error.value = null;
     try {
         await loadData(SUPPORT_SEARCH_KEYS);
-        enumOptions.value = await fetchDistinct();
+        await refreshEnumOptions();
         await runQuery(true);
     } catch (e: any) {
         error.value = e?.message ?? String(e);

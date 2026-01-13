@@ -20,9 +20,9 @@ export async function loadData(keys: Array<keyof FlatRow>): Promise<{ count: num
     return w.load(DATA_URL, keys);
 }
 
-export async function fetchDistinct(): Promise<EnumOptionMap> {
+export async function fetchDistinct(input?: Pick<QueryInput, 'q' | 'enums'>): Promise<EnumOptionMap> {
     const w = await getWorker();
-    return w.distinct();
+    return w.distinct(input);
 }
 
 export interface QueryResult {
