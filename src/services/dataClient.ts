@@ -15,7 +15,7 @@ export async function getWorker(): Promise<Remote<WorkerAPI>> {
     return remote;
 }
 
-export async function loadData(keys: Array<keyof FlatRow>): Promise<{ count: number }> {
+export async function loadData(keys: Array<keyof FlatRow>): Promise<{ count: number, updateTime: number }> {
     const w = await getWorker();
     return w.load(DATA_URL, keys);
 }

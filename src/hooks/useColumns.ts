@@ -208,7 +208,8 @@ const init = async () => {
     loading.value = true;
     error.value = null;
     try {
-        await loadData(SUPPORT_SEARCH_KEYS);
+        const { updateTime: _updateTime } = await loadData(SUPPORT_SEARCH_KEYS);
+        updateTime.value = _updateTime;
         await refreshEnumOptions();
         await runQuery(true);
     } catch (e: any) {
@@ -251,11 +252,7 @@ const titleTipMap: Record<string, string> = {
 };
 
 const mergeRowSpanCell = (_: FlatRow, index?: number) => ({ rowSpan: getMergedRowSpan(index) });
-const createColumn = (
-    key: keyof FlatRow | string,
-    title: string,
-    options: Partial<ColumnType<FlatRow>> = {}
-): ColumnType<FlatRow> & { exportTitle?: string } => {
+const createColumn = (key: keyof FlatRow | string, title: string, options: Partial<ColumnType<FlatRow>> = {}): ColumnType<FlatRow> & { exportTitle?: string } => {
     const shouldMerge = isMergeColumn(String(key));
     return {
         key,
