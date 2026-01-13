@@ -1,23 +1,23 @@
-/// <reference lib="webworker" />
+﻿/// <reference lib="webworker" />
 import { expose } from 'comlink';
 import Fuse from 'fuse.js';
 import { flattenDevice } from '../utils/flatten';
-import type { RawData, FlatRow, EnumFilters, EnumOption, EnumOptionMap, SortSpec, QueryInput } from '../types/data';
+import type { RawData, FlatRow, EnumFilters, EnumOption, EnumOptionMap, SortSpec, QueryInput, ExportColumn } from '../types/data';
 import { buildExcelBufferByTemplate } from './export';
 import { toString } from 'lodash-es';
 
 const MAX_FUSE_QUERY_LENGTH = 40;
 
-/** 全量数据缓存 */
+/** 鍏ㄩ噺鏁版嵁缂撳瓨 */
 let rows: FlatRow[] = [];
 
-/** 搜索 */
+/** 鎼滅储 */
 let fuse: Fuse<FlatRow> | null = null;
 
-/** 数据更新时间 */
+/** 鏁版嵁鏇存柊鏃堕棿 */
 let updateTime: number = 0;
 
-/** 模糊搜索涵盖的键*/
+/** 妯＄硦鎼滅储娑电洊鐨勯敭*/
 let searchKeys: Array<keyof FlatRow> = [];
 
 function buildFuse(keys: (keyof FlatRow)[]) {
@@ -119,10 +119,8 @@ const api = {
 
     async query(input: QueryInput): Promise<{ rows: FlatRow[]; total: number; updateTime: number }> {
         const { q, enums, sort, page = 1, pageSize = 10 } = input || {};
-        // 先处理搜索逻辑
         const base = filterBySearch(q);
 
-        // 再处理列筛选逻辑
         const filtered = base.filter((r) => passEnums(r, enums));
         const sorted = sort && sort.length ? sortRows(filtered, sort) : filtered;
 
@@ -194,12 +192,11 @@ const api = {
             homeAssistantEntities: collectArray(byOtherFilters('homeAssistantEntities'), (row) => row.homeAssistantEntities),
         };
     },
-    /** 生成导出文件�?Buffer */
-    async buildExcelBuf() {
-        return await buildExcelBufferByTemplate(rows);
+    /** 鐢熸垚瀵煎嚭鏂囦欢锟?Buffer */
+    async buildExcelBuf(columns: ExportColumn[]) {
+        return await buildExcelBufferByTemplate(rows, columns);
     },
 };
 
 export type WorkerAPI = typeof api;
 expose(api);
-

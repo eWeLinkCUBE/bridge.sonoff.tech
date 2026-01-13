@@ -7,7 +7,7 @@ import MatterThirdPartAppCluster from '@/components/business/MatterThirdPartAppC
 import EwelinkCapabilities from '@/components/business/EwelinkCapabilities.vue';
 import { ref, computed, reactive } from 'vue';
 import { Popover } from 'ant-design-vue';
-import { type EnumFilters, type EnumOptionMap } from '@/types/data';
+import { type EnumFilters, type EnumOptionMap, type ExportColumn } from '@/types/data';
 import { h, toRaw } from 'vue';
 import type { FilterDropdownProps } from 'ant-design-vue/es/table/interface';
 import FilterDropdown from '@/components/FilterDropdown/Index.vue';
@@ -251,7 +251,11 @@ const titleTipMap: Record<string, string> = {
 };
 
 const mergeRowSpanCell = (_: FlatRow, index?: number) => ({ rowSpan: getMergedRowSpan(index) });
-const createColumn = (key: keyof FlatRow | string, title: string, options: Partial<ColumnType<FlatRow>> = {}): ColumnType<FlatRow> => {
+const createColumn = (
+    key: keyof FlatRow | string,
+    title: string,
+    options: Partial<ColumnType<FlatRow>> = {}
+): ColumnType<FlatRow> & { exportTitle?: string } => {
     const shouldMerge = isMergeColumn(String(key));
     return {
         key,
@@ -268,6 +272,7 @@ const createColumn = (key: keyof FlatRow | string, title: string, options: Parti
             );
         },
         align: 'left',
+        exportTitle: title,
         ...(shouldMerge ? { customCell: mergeRowSpanCell } : null),
         ...options,
     };
@@ -579,6 +584,30 @@ const enhanceColumns = (cols: ColumnsType<FlatRow>): ColumnsType<FlatRow> => {
     });
 };
 
+const getExportTitle = (col: ColumnType<FlatRow> | ColumnGroupType<FlatRow>) => {
+    const explicit = (col as { exportTitle?: string }).exportTitle;
+    if (typeof explicit === 'string') return explicit;
+    if (typeof col.title === 'string') return col.title;
+    return '';
+};
+
+const buildExportColumns = (cols: ColumnsType<FlatRow>): ExportColumn[] => {
+    return cols.map((col) => {
+        const key = (col as ColumnType<FlatRow>).key;
+        if ('children' in col && col.children) {
+            return {
+                key: key ? String(key) : undefined,
+                title: getExportTitle(col as ColumnGroupType<FlatRow>),
+                children: buildExportColumns(col.children as ColumnsType<FlatRow>),
+            };
+        }
+        return {
+            key: key ? String(key) : undefined,
+            title: getExportTitle(col as ColumnType<FlatRow>),
+        };
+    });
+};
+
 const setFilterVisible = (visible: boolean) => {
     filterVisible.value = visible;
     if (!visible) {
@@ -587,15 +616,6 @@ const setFilterVisible = (visible: boolean) => {
         searchText.value = '';
         runQuery(true);
     }
-};
-
-const exportToExcel = async () => {
-    const buf = await buildExcelBuf();
-    if (!buf) return;
-    const blob = new Blob([buf], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    });
-    saveAs(blob, `export_${Date.now()}.xlsx`);
 };
 
 export const useColumns = () => {
@@ -619,6 +639,16 @@ export const useColumns = () => {
         mergeEnabled.value = !isMergeOnlyColumns(filtered);
         return enhanceColumns(filtered);
     });
+
+    const exportToExcel = async () => {
+        const exportColumns = buildExportColumns(tableColumns.value);
+        const buf = await buildExcelBuf(exportColumns);
+        if (!buf) return;
+        const blob = new Blob([buf], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        saveAs(blob, `export_${Date.now()}.xlsx`);
+    };
 
     return {
         rows,

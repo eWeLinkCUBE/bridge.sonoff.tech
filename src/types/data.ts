@@ -110,6 +110,12 @@ export interface EnumOption {
     count: number;
 }
 
+export type ExportColumn = {
+    key?: string;
+    title: string;
+    children?: ExportColumn[];
+};
+
 /** 每一列的筛选具体可筛选内容 */
 export type EnumOptionMap = {
     deviceModel: EnumOption[];
