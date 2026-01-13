@@ -37,7 +37,7 @@ export default [
             '@stylistic/no-extra-semi': ['error'],
 
             // 引号
-            '@stylistic/quotes': ['error', 'single'],
+            '@stylistic/quotes': ['warn', 'single'],
             // 定义对象文本属性名称引号
             '@stylistic/quote-props': ['error', 'as-needed'],
 

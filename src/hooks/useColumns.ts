@@ -12,7 +12,8 @@ import { h, toRaw } from 'vue';
 import type { FilterDropdownProps } from 'ant-design-vue/es/table/interface';
 import FilterDropdown from '@/components/FilterDropdown/Index.vue';
 import type { ColumnGroupType } from 'ant-design-vue/es/vc-table/interface';
-import { fetchDistinct, loadData, queryRows } from '@/services/dataClient';
+import { fetchDistinct, loadData, queryRows, buildExcelBuf } from '@/services/dataClient';
+import { saveAs } from 'file-saver';
 
 export type FilterKey = 'ewelink' | 'matter' | 'homeAssistant' | 'appleSupported' | 'googleSupported' | 'smartThingsSupported' | 'alexaSupported';
 
@@ -318,6 +319,7 @@ const platformCapabilityColumns: ColumnGroupType<FlatRow>[] = [
     },
 ];
 
+// TODO: 待产品确认 “Cluster 为空”的具体含义
 function withNotes(
     record: FlatRow,
     supportKey: 'appleSupported' | 'googleSupported' | 'smartThingsSupported' | 'alexaSupported',
@@ -538,6 +540,15 @@ const setFilterVisible = (visible: boolean) => {
     }
 };
 
+const exportToExcel = async () => {
+    const buf = await buildExcelBuf();
+    if (!buf) return;
+    const blob = new Blob([buf], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    saveAs(blob, `export_${Date.now()}.xlsx`);
+};
+
 export const useColumns = () => {
     const baseColumns = computed<ColumnsType<FlatRow>>(() => {
         return [
@@ -577,5 +588,6 @@ export const useColumns = () => {
         rowKey,
         runQuery,
         init,
+        exportToExcel,
     };
 };

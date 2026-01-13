@@ -34,3 +34,8 @@ export async function queryRows(input: QueryInput): Promise<QueryResult> {
     const w = await getWorker();
     return w.query(input);
 }
+
+export async function buildExcelBuf() {
+    const w = await getWorker();
+    return await w.buildExcelBuf();
+}
