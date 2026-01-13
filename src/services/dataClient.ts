@@ -1,7 +1,7 @@
 import type { Remote } from 'comlink';
 import { wrap } from 'comlink';
 import type { WorkerAPI } from '../workers/worker';
-import type { FlatRow, EnumOptionMap, QueryInput } from '../types/data';
+import type { FlatRow, EnumOptionMap, QueryInput, ExportColumn } from '../types/data';
 
 const DATA_URL = new URL('../assets/data/large.json?url', import.meta.url).href;
 
@@ -35,7 +35,7 @@ export async function queryRows(input: QueryInput): Promise<QueryResult> {
     return w.query(input);
 }
 
-export async function buildExcelBuf() {
+export async function buildExcelBuf(columns: ExportColumn[]) {
     const w = await getWorker();
-    return await w.buildExcelBuf();
+    return await w.buildExcelBuf(columns);
 }

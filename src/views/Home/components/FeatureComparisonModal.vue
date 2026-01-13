@@ -2,7 +2,7 @@
     <div class="feature-comparison-modal" ref="featureComparisonModal">
         <Modal :open="visible" :closable="false" :get-container="featureComparisonModal" :destroyOnClose="true" :footer="null" width="440px" centered>
             <div class="modal-content">
-                <div class="title">Bridge 设备兼容与功能对照表（缺）</div>
+                <div class="title">{{ PAGE_TITLE }}</div>
                 <div class="content">
                     <div class="introduce">
                         设备兼容与功能对照表可以查询网关支持接入的所有设备及设备接出的平台及对应的能力，表格显示数据为当前最新版本支持的设备，查询到的设备与您使用的实际体验有出入时请先将网关升级到最新版本（缺）
@@ -41,6 +41,7 @@ import appleHome from '@/assets/img/appleHome.png';
 import googleHome from '@/assets/img/googleHome.png';
 import amazoneAlexa from '@/assets/img/amazoneAlexa.png';
 import smartThings from '@/assets/img/smartThings.png';
+import { PAGE_TITLE } from '@/contants';
 
 defineEmits(['cancel']);
 defineProps<{

@@ -2,7 +2,7 @@
     <div class="header-filter">
         <div class="header-filter-left">
             <div class="header-filter-title">
-                Bridge 设备兼容与功能对照表（缺）
+                {{ PAGE_TITLE }}
                 <div class="header-filter-title-tip">
                     <img class="title-tip-icon" :src="QA" @click="modalVisible = true" />
                 </div>
@@ -57,6 +57,7 @@ import { format } from 'date-fns';
 import { computed, ref } from 'vue';
 import { Popover } from 'ant-design-vue';
 import ColumnsShowHide from './ColumnsShowHide.vue';
+import { PAGE_TITLE } from '@/contants';
 
 const { filterVisible, updateTime, searchText, setFilterVisible, runQuery, exportToExcel } = useColumns();
 const modalVisible = ref(false);
