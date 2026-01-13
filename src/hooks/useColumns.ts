@@ -14,6 +14,7 @@ import FilterDropdown from '@/components/FilterDropdown/Index.vue';
 import type { ColumnGroupType } from 'ant-design-vue/es/vc-table/interface';
 import { fetchDistinct, loadData, queryRows, buildExcelBuf } from '@/services/dataClient';
 import { saveAs } from 'file-saver';
+import { buildMergeSpans, isMergeColumn } from '@/utils/mergeCells';
 
 export type FilterKey = 'ewelink' | 'matter' | 'homeAssistant' | 'appleSupported' | 'googleSupported' | 'smartThingsSupported' | 'alexaSupported';
 
@@ -151,6 +152,28 @@ const rowKey = (row: FlatRow) => row.rowId;
 
 // 避免响应式代理传给 worker 造成结构化克隆失败
 const cloneForWorker = <T>(value: T): T => structuredClone(toRaw(value));
+const mergeEnabled = ref(true);
+const mergedRowSpans = computed(() => (mergeEnabled.value ? buildMergeSpans(rows.value) : new Array(rows.value.length).fill(1)));
+const getMergedRowSpan = (index?: number) => {
+    if (typeof index !== 'number' || index < 0) return 1;
+    return mergedRowSpans.value[index] ?? 1;
+};
+const getLeafKeys = (cols: ColumnsType<FlatRow>): string[] => {
+    const keys: string[] = [];
+    cols.forEach((col) => {
+        if ('children' in col && col.children) {
+            keys.push(...getLeafKeys(col.children as ColumnsType<FlatRow>));
+            return;
+        }
+        const key = (col as ColumnType<FlatRow>).key;
+        if (key) keys.push(String(key));
+    });
+    return keys;
+};
+const isMergeOnlyColumns = (cols: ColumnsType<FlatRow>) => {
+    const keys = getLeafKeys(cols);
+    return keys.every((key) => isMergeColumn(key));
+};
 
 // 查询走 worker，支持搜索 + 筛选；debounce 在输入时触发
 const runQuery = async (resetPage = false) => {
@@ -222,35 +245,56 @@ const titleTipMap: Record<string, string> = {
     homeAssistantSupported: 'Home Assistant Support',
 };
 
-const createColumn = (key: keyof FlatRow | string, title: string, options: Partial<ColumnType<FlatRow>> = {}): ColumnType<FlatRow> => ({
-    key,
-    dataIndex: key as ColumnType<FlatRow>['dataIndex'],
-    title: () => {
-        if (!Object.keys(titleTipMap).includes(key)) return title;
-        return h(
-            Popover,
-            { trigger: 'hover', placement: 'bottom' },
-            {
-                default: () => h('div', { style: { cursor: 'pointer' } }, title),
-                content: () => h('div', titleTipMap[key]),
-            }
-        );
-    },
-    align: 'left',
-    ...options,
-});
+const mergeRowSpanCell = (_: FlatRow, index?: number) => ({ rowSpan: getMergedRowSpan(index) });
+const createColumn = (key: keyof FlatRow | string, title: string, options: Partial<ColumnType<FlatRow>> = {}): ColumnType<FlatRow> => {
+    const shouldMerge = isMergeColumn(String(key));
+    return {
+        key,
+        dataIndex: key as ColumnType<FlatRow>['dataIndex'],
+        title: () => {
+            if (!Object.keys(titleTipMap).includes(key)) return title;
+            return h(
+                Popover,
+                { trigger: 'hover', placement: 'bottom' },
+                {
+                    default: () => h('div', { style: { cursor: 'pointer' } }, title),
+                    content: () => h('div', titleTipMap[key]),
+                }
+            );
+        },
+        align: 'left',
+        ...(shouldMerge ? { customCell: mergeRowSpanCell } : null),
+        ...options,
+    };
+};
 
 /** 支持接入的设备 */
 const deviceInfoColumns: ColumnsType<FlatRow> = [
-    createColumn('deviceSource', '设备来源（缺）', { width: 130, fixed: true, customRender: ({ record }) => record.deviceSource }),
+    createColumn('deviceSource', '设备来源（缺）', {
+        width: 130,
+        fixed: true,
+        customRender: ({ record }) => record.deviceSource,
+    }),
     {
         title: 'Device information',
         key: 'deviceInformation',
         fixed: true,
         children: [
-            createColumn('deviceModel', 'Model', { width: 160, fixed: true, customRender: ({ record }) => record.deviceModel }),
-            createColumn('deviceBrand', 'Brand', { width: 130, fixed: true, customRender: ({ record }) => record.deviceBrand }),
-            createColumn('deviceCategory', 'Category', { width: 130, fixed: true, customRender: ({ record }) => record.deviceCategory }),
+            createColumn('deviceModel', 'Model', {
+                width: 160,
+                fixed: true,
+                customRender: ({ record }) => record.deviceModel,
+            }),
+            createColumn('deviceBrand', 'Brand', {
+                width: 130,
+                fixed: true,
+                customRender: ({ record }) => record.deviceBrand,
+            }),
+            createColumn('deviceCategory', 'Category', {
+                width: 130,
+                fixed: true,
+                customRender: ({ record }) => record.deviceCategory,
+            }),
         ],
     },
 ];
@@ -567,6 +611,7 @@ export const useColumns = () => {
 
     const tableColumns = computed(() => {
         const filtered = filterColumns(baseColumns.value, columnsShowHideOptions.value);
+        mergeEnabled.value = !isMergeOnlyColumns(filtered);
         return enhanceColumns(filtered);
     });
 
