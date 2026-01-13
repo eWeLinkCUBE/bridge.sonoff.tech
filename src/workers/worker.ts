@@ -3,6 +3,7 @@ import { expose } from 'comlink';
 import Fuse from 'fuse.js';
 import { flattenDevice } from '../utils/flatten';
 import type { RawData, FlatRow, EnumFilters, EnumOption, EnumOptionMap, SortSpec, QueryInput } from '../types/data';
+import { buildExcelBufferByTemplate } from './export';
 import { toString } from 'lodash-es';
 
 const MAX_FUSE_QUERY_LENGTH = 40;
@@ -181,6 +182,10 @@ const api = {
             homeAssistantSupported: collect((row) => row.homeAssistantSupported, true),
             homeAssistantEntities: collectArray((row) => row.homeAssistantEntities),
         };
+    },
+    /** 生成导出文件的 Buffer */
+    async buildExcelBuf() {
+        return await buildExcelBufferByTemplate(rows);
     },
 };
 

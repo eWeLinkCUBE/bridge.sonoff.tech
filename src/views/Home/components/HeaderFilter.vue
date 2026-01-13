@@ -24,7 +24,7 @@
                     <ColumnsShowHide />
                 </template>
             </Popover>
-            <div class="header-filter-export" @click="() => {}">
+            <div class="header-filter-export" @click="exportToExcel">
                 <img class="export-icon" :src="exportPng" />
                 Export
             </div>
@@ -58,7 +58,7 @@ import { computed, ref } from 'vue';
 import { Popover } from 'ant-design-vue';
 import ColumnsShowHide from './ColumnsShowHide.vue';
 
-const { filterVisible, updateTime, searchText, setFilterVisible, runQuery } = useColumns();
+const { filterVisible, updateTime, searchText, setFilterVisible, runQuery, exportToExcel } = useColumns();
 const modalVisible = ref(false);
 const showColumnVisible = ref(false);
 const updateTimeLabel = computed(() => {
