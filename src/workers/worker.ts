@@ -114,7 +114,7 @@ const api = {
         updateTime = _updateTime;
         rows = supportDevices.flatMap((item, idx) => flattenDevice(item, idx));
         buildFuse(keys);
-        return { count: rows.length };
+        return { count: rows.length, updateTime };
     },
 
     async query(input: QueryInput): Promise<{ rows: FlatRow[]; total: number; updateTime: number }> {
