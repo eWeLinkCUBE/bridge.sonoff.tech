@@ -299,7 +299,7 @@ const deviceInfoColumns: ColumnsType<FlatRow> = [
             createColumn('deviceBrand', 'Brand', {
                 width: 130,
                 fixed: true,
-                customRender: ({ record }) => record.deviceBrand,
+                customRender: ({ record }) => record.deviceBrand || 'N/A',
             }),
             createColumn('deviceCategory', 'Category', {
                 width: 130,
