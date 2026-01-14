@@ -8,7 +8,14 @@
                 </div>
             </div>
             <div class="header-filter-search">
-                <SearchInput placeholder="Search by device model, category" v-model:value="searchText" @search="runQuery(true)"></SearchInput>
+                <SearchInput placeholder="Search by device model, category" v-model:value="searchText" @search="runQuery(true)">
+                    <template #suffix>
+                        <span class="total-count">
+                            <span class="separation"></span>
+                            <span class="total">{{ `Total: ${initLoading ? '--' : total}` }}</span>
+                        </span>
+                    </template>
+                </SearchInput>
             </div>
             <div class="header-filter-control" :class="{ active: filterVisible }" @click="setFilterVisible(!filterVisible)">
                 <img class="control-filter-icon" :src="filterVisible ? filterActivePng : filter" />
@@ -59,11 +66,11 @@ import { Popover } from 'ant-design-vue';
 import ColumnsShowHide from './ColumnsShowHide.vue';
 import { PAGE_TITLE } from '@/contants';
 
-const { filterVisible, updateTime, searchText, setFilterVisible, runQuery, exportToExcel } = useColumns();
+const { filterVisible, updateTime, searchText, total, initLoading, setFilterVisible, runQuery, exportToExcel } = useColumns();
 const modalVisible = ref(false);
 const showColumnVisible = ref(false);
 const updateTimeLabel = computed(() => {
-    return format(updateTime.value, 'yyyy-MM-dd');
+    return initLoading.value ? '--' : format(updateTime.value, 'yyyy-MM-dd');
 });
 </script>
 <style lang="scss" scoped>
@@ -178,6 +185,26 @@ const updateTimeLabel = computed(() => {
         width: 1px;
         height: 32px;
         background-color: #d2def0;
+    }
+}
+
+.header-filter-search {
+    .total-count {
+        display: inline-flex;
+        align-items: center;
+        color: #bfbfbf;
+
+        .separation {
+            display: inline-block;
+            height: 18px;
+            width: 1px;
+            background-color: #bfbfbf;
+            margin-right: 8px;
+        }
+
+        .total {
+            min-width: 75px;
+        }
     }
 }
 </style>

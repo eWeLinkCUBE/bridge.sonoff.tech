@@ -61,7 +61,7 @@ const supportDeviceTypesOptions = [
         icon: homeAssistant,
     },
     {
-        label: 'eWeLink Remote sub-devices（缺）',
+        label: 'eWeLink Remote sub-devices',
         icon: remote,
     },
 ];
