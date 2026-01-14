@@ -79,6 +79,8 @@ const enumFilterSearch = ref<Partial<Record<keyof EnumFilters, string>>>({});
 const enumFilterLimit = ref<Partial<Record<keyof EnumFilters, number>>>({});
 /** 是否展示筛选 */
 const filterVisible = ref(false);
+/** 初始化 loading */
+const initLoading = ref(false);
 
 const getEnumFilterLimit = (key: keyof EnumFilters) => enumFilterLimit.value[key] ?? MAX_FILTER_OPTIONS;
 const setEnumFilterLimit = (key: keyof EnumFilters, value: number) => {
@@ -205,6 +207,7 @@ const runQuery = async (resetPage = false) => {
 };
 
 const init = async () => {
+    initLoading.value = true;
     loading.value = true;
     error.value = null;
     try {
@@ -215,6 +218,7 @@ const init = async () => {
     } catch (e: any) {
         error.value = e?.message ?? String(e);
     } finally {
+        initLoading.value = false;
         loading.value = false;
     }
 };
@@ -278,7 +282,7 @@ const createColumn = (key: keyof FlatRow | string, title: string, options: Parti
 /** 支持接入的设备 */
 const deviceInfoColumns: ColumnsType<FlatRow> = [
     createColumn('deviceSource', '设备来源（缺）', {
-        width: 130,
+        width: 160,
         fixed: true,
         customRender: ({ record }) => record.deviceSource,
     }),
@@ -651,6 +655,7 @@ export const useColumns = () => {
         rows,
         total,
         loading,
+        initLoading,
         error,
         searchText,
         pagination,
