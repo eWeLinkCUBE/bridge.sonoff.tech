@@ -11,7 +11,7 @@ jobs:
     build-and-deploy:
         runs-on: ubuntu-latest
         env:
-            VITE_BASE_URL: ${{ github.repository == 'eWeLinkCUBE/bridge.sonoff.tech' && '/' || '/zigbee-device-table-web-test/' }}
+            VITE_BASE_URL: ${{ github.repository == 'eWeLinkCUBE/bridge.sonoff.tech' && '/device-function-reference-table' || '/zigbee-device-table-web-test/' }}
             # USE_CUSTOM_DOMAIN: 'true'
             # CUSTOM_DOMAIN: example.com
 
