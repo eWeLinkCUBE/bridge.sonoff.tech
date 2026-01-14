@@ -282,7 +282,7 @@ const createColumn = (key: keyof FlatRow | string, title: string, options: Parti
 /** 支持接入的设备 */
 const deviceInfoColumns: ColumnsType<FlatRow> = [
     createColumn('deviceSource', '设备来源（缺）', {
-        width: 160,
+        width: 172,
         fixed: true,
         customRender: ({ record }) => record.deviceSource,
     }),
