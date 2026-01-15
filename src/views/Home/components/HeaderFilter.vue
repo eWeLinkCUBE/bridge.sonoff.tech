@@ -60,7 +60,7 @@ import eyeActive from '@/assets/img/eye-active.png';
 import exportPng from '@/assets/img/export.png';
 import { useColumns } from '@/hooks/useColumns';
 import FeatureComparisonModal from './FeatureComparisonModal.vue';
-import { format } from 'date-fns';
+import dayjs from 'dayjs';
 import { computed, ref } from 'vue';
 import { Popover } from 'ant-design-vue';
 import ColumnsShowHide from './ColumnsShowHide.vue';
@@ -70,7 +70,7 @@ const { filterVisible, updateTime, searchText, total, initLoading, setFilterVisi
 const modalVisible = ref(false);
 const showColumnVisible = ref(false);
 const updateTimeLabel = computed(() => {
-    return initLoading.value ? '--' : format(updateTime.value, 'yyyy-MM-dd');
+    return initLoading.value ? '--' : dayjs(updateTime.value).format('YYYY-MM-DD');
 });
 </script>
 <style lang="scss" scoped>
