@@ -80,7 +80,7 @@ const supportPlatformsOptions = [
         icon: googleHome,
     },
     {
-        label: 'Amazone Alexa',
+        label: 'Amazon Alexa',
         icon: amazoneAlexa,
     },
     {

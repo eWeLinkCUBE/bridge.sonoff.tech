@@ -1,6 +1,6 @@
 <template>
     <div class="columns-show-hide">
-        <div class="title">关闭选项即不显示对应的列，关闭网页再次进入需要重新配置（缺）</div>
+        <div class="title">关闭选项即不显示对应的列，关闭网页再次进入需要重新设置（缺）</div>
         <div class="columns-options">
             <template v-for="item in columnsShowHideOptions" :key="item.key">
                 <div class="column-option">
