@@ -52,7 +52,7 @@ const columnsShowHideOptions = ref<FilterOption>([
             },
             {
                 key: 'alexaSupported',
-                label: 'Amazone Alexa',
+                label: 'Amazon Alexa',
                 visible: true,
             },
             {
@@ -88,6 +88,23 @@ const setEnumFilterLimit = (key: keyof EnumFilters, value: number) => {
 };
 const resetEnumFilterLimit = (key: keyof EnumFilters) => setEnumFilterLimit(key, MAX_FILTER_OPTIONS);
 const increaseEnumFilterLimit = (key: keyof EnumFilters) => setEnumFilterLimit(key, getEnumFilterLimit(key) + MAX_FILTER_OPTIONS);
+const resetAllEnumFilterLimit = () => {
+    Object.keys(enums.value).forEach((enumKey) => resetEnumFilterLimit(enumKey as keyof EnumFilters));
+};
+const ensureEnumFilterLimitForSelection = (key: keyof EnumFilters) => {
+    const selected = enums.value[key];
+    if (!selected || selected.length === 0) {
+        resetEnumFilterLimit(key);
+        return;
+    }
+    const raw = enumOptions.value[key] || [];
+    const maxIndex = selected.reduce((acc, value) => {
+        const idx = raw.findIndex((opt) => opt.value === String(value));
+        return idx > acc ? idx : acc;
+    }, -1);
+    const needed = Math.max(MAX_FILTER_OPTIONS, maxIndex + 1);
+    if (needed !== getEnumFilterLimit(key)) setEnumFilterLimit(key, needed);
+};
 
 // 枚举筛选的默认空值；每次重置或 worker 返回 filters 时使用
 const createDefaultEnums = (): EnumFilters => ({
@@ -240,7 +257,8 @@ const ewelinkCapabilitiesTransform = (list: string[], supported: boolean) => {
     });
 };
 
-const thirdAppTips = (thirdApp: string) => `设备接入到对 ${thirdApp} 支持的能力，“Matter 无对应设备类型”表示该设备 Matter 1.4 版本协议不支持；“Bridge 暂未适配该设备”表示 Matter Bridge 还未接入该设备（缺）`;
+const thirdAppTips = (thirdApp: string) =>
+    `设备接入到对 ${thirdApp} 支持的能力，“Matter 无对应设备类型”表示该设备 Matter 1.4 版本协议不支持；“Bridge 暂未适配该设备”表示 Matter Bridge 还未接入该设备（缺）`;
 
 const titleTipMap: Record<string, string> = {
     deviceSource: '网关支持接入的设备来源（缺）',
@@ -253,7 +271,7 @@ const titleTipMap: Record<string, string> = {
     appleSupported: thirdAppTips('Apple Home'),
     googleSupported: thirdAppTips('Google Home'),
     smartThingsSupported: thirdAppTips('SmartThings'),
-    alexaSupported: thirdAppTips('Amazone Alexa'),
+    alexaSupported: thirdAppTips('Amazon Alexa'),
     homeAssistantEntities: '设备接入到 HA 的实体类型，N/A 表示设备暂未支持（缺）',
     homeAssistantSupported: '表示设备是否支持通过 MQTT 的方式同步到 Home Assistant（缺）',
 };
@@ -581,6 +599,7 @@ const enhanceColumns = (cols: ColumnsType<FlatRow>): ColumnsType<FlatRow> => {
             onFilterDropdownOpenChange: async (visible: boolean) => {
                 if (visible) {
                     clearSearchForColumn();
+                    ensureEnumFilterLimitForSelection(enumKey);
                 }
             },
         };
@@ -617,6 +636,7 @@ const setFilterVisible = (visible: boolean) => {
         enums.value = createDefaultEnums();
         pagination.pageSize = 20;
         searchText.value = '';
+        resetAllEnumFilterLimit();
         runQuery(true);
     }
 };
