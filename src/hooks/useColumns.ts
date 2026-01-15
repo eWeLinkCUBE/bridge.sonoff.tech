@@ -231,28 +231,31 @@ const boolIcon = (value?: boolean) =>
         },
         src: value ? correct : wrong,
     });
-const listDisplay = (list: string[]) => (list.length ? list.join(',') : 'Not Yet Supported');
+const listDisplay = (list: string[]) => (list.length ? list.join(',') : 'N/A');
 const ewelinkCapabilitiesTransform = (list: string[], supported: boolean) => {
-    if (!list.length && !supported) return 'Unsupported in eWeLink App';
+    if (!list.length && !supported) return 'N/A';
     if (!list.length && supported) return 'No Supported Capabilities';
     return h(EwelinkCapabilities, {
         capabilities: list,
     });
 };
 
+const thirdAppTips = (thirdApp: string) => `设备接入到对 ${thirdApp} 支持的能力，“Matter 无对应设备类型”表示该设备 Matter 1.4 版本协议不支持；“Bridge 暂未适配该设备”表示 Matter Bridge 还未接入该设备（缺）`;
+
 const titleTipMap: Record<string, string> = {
-    ewelinkSupported: 'Supported in eWeLink App',
-    ewelinkCapabilities: 'eWeLink App Capabilities',
-    matterSupported: 'Sync via Matter Bridge',
-    matterDeviceType: 'Matter Device Type',
-    matterProtocolVersion: 'Matter Version',
-    matterSupportedClusters: 'Matter Capabilities',
-    appleSupported: 'Apple Home Features',
-    googleSupported: 'Google Home Features',
-    smartThingsSupported: 'SmartThings Features',
-    alexaSupported: 'Alexa Features',
-    homeAssistantEntities: 'Home Assistant Entity',
-    homeAssistantSupported: 'Home Assistant Support',
+    deviceSource: '网关支持接入的设备来源（缺）',
+    ewelinkSupported: '表示设备是否支持同步到 eWeLink 云，是否支持在 eWeLink App 中显示和控制（缺）',
+    ewelinkCapabilities: '设备同步到易微联 App 后支持的能力，N/A 的设备表示不支持同步到易微联云，“暂无支持的能力”的设备表示在易微联 App 无实际可控制的能力（缺）',
+    matterSupported: '表示设备是否支持通过 Matter Bridge 功能同步到其他 Matter 平台（缺）',
+    matterDeviceType: '设备在 Matter 1.4 版本标准协议中对应的 device type，“Matter 无对应设备类型”表示 Matter 1.4 版本不支持该设备类型（缺）',
+    matterProtocolVersion: '协议支持 Device type 的版本（缺）',
+    matterSupportedClusters: '设备在 Matter 1.4 版本标准协议中对应的 Cluster(能力)，☑ 表示已经网关接入，✘ 表示暂未接入（缺）',
+    appleSupported: thirdAppTips('Apple Home'),
+    googleSupported: thirdAppTips('Google Home'),
+    smartThingsSupported: thirdAppTips('SmartThings'),
+    alexaSupported: thirdAppTips('Amazone Alexa'),
+    homeAssistantEntities: '设备接入到 HA 的实体类型，N/A 表示设备暂未支持（缺）',
+    homeAssistantSupported: '表示设备是否支持通过 MQTT 的方式同步到 Home Assistant（缺）',
 };
 
 const mergeRowSpanCell = (_: FlatRow, index?: number) => ({ rowSpan: getMergedRowSpan(index) });
@@ -334,7 +337,7 @@ const platformCapabilityColumns: ColumnGroupType<FlatRow>[] = [
                 width: 166,
                 customRender: ({ record }) => boolIcon(record.matterSupported),
             }),
-            createColumn('matterDeviceType', 'Matter Device Type', { width: 200, customRender: ({ record }) => record.matterDeviceType || 'Not Yet Supported' }),
+            createColumn('matterDeviceType', 'Matter Device Type', { width: 200, customRender: ({ record }) => record.matterDeviceType || 'Matter 无对应设备类型（缺）' }),
             createColumn('matterSupportedClusters', 'Cluster', {
                 width: 400,
                 customRender: ({ record }) => stringifyClusterInfo(record.matterSupportedClusters, record.matterUnsupportedClusters),
@@ -383,11 +386,10 @@ function withNotes(
     const supported = record[supportKey];
     const notes = record[notesKey];
     const isThirdAppEmpty = !supported.length;
-    const { matterSupportedClusters, matterUnsupportedClusters, deviceSource } = record;
-    const isClusterOrDeviceTypeEmpty = ![...matterSupportedClusters, ...matterUnsupportedClusters].length || !deviceSource;
+    const { matterDeviceType } = record;
 
-    if (isThirdAppEmpty && isClusterOrDeviceTypeEmpty) return 'Not Yet Supported';
-    if (isThirdAppEmpty && !isClusterOrDeviceTypeEmpty) return 'Device Type Unsupported';
+    if (isThirdAppEmpty && matterDeviceType) return 'Bridge 暂未适配该设备（缺）';
+    if (isThirdAppEmpty && !matterDeviceType) return 'Matter 无对应设备类型（缺）';
     return h(MatterThirdPartAppCluster, {
         supported: supported,
         notes,

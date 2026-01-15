@@ -82,7 +82,7 @@ const getCellValue = (row: FlatRow, key: keyof FlatRow): string | number => {
         ewelinkSupported: (r) => (r.ewelinkSupported ? '√' : '×'),
         ewelinkCapabilities: (r) => ewelinkCapabilitiesLabel(r),
         matterSupported: (r) => (r.matterSupported ? '√' : '×'),
-        matterDeviceType: (r) => r.matterDeviceType ?? 'Not Yet Supported',
+        matterDeviceType: (r) => r.matterDeviceType ?? 'Matter 无对应设备类型（缺）',
         matterSupportedClusters: (r) => clusterLabel(r.matterSupportedClusters, r.matterUnsupportedClusters),
         matterProtocolVersion: (r) => r.matterProtocolVersion || 'N/A',
         appleSupported: (r) => thirdAppMatterBridgeLabel(r, 'appleSupported'),
@@ -208,12 +208,12 @@ const applyDataStyles = (sheet: XLSX.WorkSheet, startRow: number, rowCount: numb
 };
 
 const entitiesLabel = (entities: string[]) => {
-    return !entities.length ? 'Not Yet Supported' : entities.join('\n');
+    return !entities.length ? 'N/A' : entities.join('\n');
 };
 
 const ewelinkCapabilitiesLabel = (row: FlatRow) => {
     const { ewelinkSupported, ewelinkCapabilities } = row;
-    if (!ewelinkCapabilities.length && !ewelinkSupported) return 'Unsupported in eWeLink App';
+    if (!ewelinkCapabilities.length && !ewelinkSupported) return 'N/A';
     if (!ewelinkCapabilities.length && ewelinkSupported) return 'No Supported Capabilities';
     return ewelinkCapabilities.join('\n');
 };
@@ -225,11 +225,11 @@ const clusterLabel = (supported: string[], unsupported: string[]) => {
 };
 
 const thirdAppMatterBridgeLabel = (row: FlatRow, supportKey: 'appleSupported' | 'googleSupported' | 'smartThingsSupported' | 'alexaSupported') => {
-    const { matterSupportedClusters, matterUnsupportedClusters, matterDeviceType } = row;
-    const thirdAppSupported = row[supportKey];
-    const isThirdAppEmpty = !thirdAppSupported.length;
-    const isClusterOrMatterDeviceTypeEmpty = ![...matterSupportedClusters, ...matterUnsupportedClusters].length || !matterDeviceType;
-    if (isThirdAppEmpty && isClusterOrMatterDeviceTypeEmpty) return 'Not Yet Supported';
-    if (isThirdAppEmpty && !isClusterOrMatterDeviceTypeEmpty) return 'Device Type Unsupported';
-    return thirdAppSupported.join('\n');
+    const supported = row[supportKey];
+    const isThirdAppEmpty = !supported.length;
+    const { matterDeviceType } = row;
+
+    if (isThirdAppEmpty && matterDeviceType) return 'Bridge 暂未适配该设备（缺）';
+    if (isThirdAppEmpty && !matterDeviceType) return 'Matter 无对应设备类型（缺）';
+    return supported.join('\n');
 };
