@@ -228,6 +228,8 @@ const init = async () => {
     loading.value = true;
     error.value = null;
     try {
+        // 喘口气再拉数据
+        await new Promise(requestAnimationFrame);
         const { updateTime: _updateTime } = await loadData(SUPPORT_SEARCH_KEYS);
         updateTime.value = _updateTime;
         await refreshEnumOptions();
