@@ -261,22 +261,22 @@ const ewelinkCapabilitiesTransform = (list: string[], supported: boolean) => {
 };
 
 const thirdAppTips = (thirdApp: string) =>
-    `设备接入到对 ${thirdApp} 支持的能力，“Matter 无对应设备类型”表示该设备 Matter 1.4 版本协议不支持；“Bridge 暂未适配该设备”表示 Matter Bridge 还未接入该设备（缺）`;
+    `Capabilities supported when the device is exposed to ${thirdApp}. "No corresponding Matter device type" means this device type is not supported in the Matter 1.4 specification. "Bridge not yet adapted to this device" means the Matter Bridge has not integrated this device yet`;
 
 const titleTipMap: Record<string, string> = {
-    deviceSource: '网关支持接入的设备来源（缺）',
-    ewelinkSupported: '表示设备是否支持同步到 eWeLink 云，是否支持在 eWeLink App 中显示和控制（缺）',
-    ewelinkCapabilities: '设备同步到易微联 App 后支持的能力，N/A 的设备表示不支持同步到易微联云，“暂无支持的能力”的设备表示在易微联 App 无实际可控制的能力（缺）',
-    matterSupported: '表示设备是否支持通过 Matter Bridge 功能同步到其他 Matter 平台（缺）',
-    matterDeviceType: '设备在 Matter 1.4 版本标准协议中对应的 device type，“Matter 无对应设备类型”表示 Matter 1.4 版本不支持该设备类型（缺）',
-    matterProtocolVersion: '协议支持 Device type 的版本（缺）',
-    matterSupportedClusters: '设备在 Matter 1.4 版本标准协议中对应的 Cluster(能力)，☑ 表示已经网关接入，✘ 表示暂未接入（缺）',
+    deviceSource: 'Device sources supported by the Bridge',
+    ewelinkSupported: 'Indicates whether the device can be synced to the eWeLink Cloud and displayed/controlled in the eWeLink app',
+    ewelinkCapabilities: 'Capabilities after the device is synced to the eWeLink app. "N/A" means the device cannot be synced to the eWeLink Cloud. "No supported capabilities" means the device has no practical controllable features in the eWeLink app.',
+    matterSupported: 'Indicates whether the device can be synced to other Matter platforms via the Matter Bridge.',
+    matterDeviceType: 'Device type defined for this device in the Matter 1.4 standard. "No corresponding Matter device type" means this device type is not supported in Matter 1.4.',
+    matterProtocolVersion: 'Supported Matter Version',
+    matterSupportedClusters: 'Clusters (capabilities) defined for this device in the Matter 1.4 standard. ☑ means the gateway already supports this cluster; ✘ means it is not supported yet.',
     appleSupported: thirdAppTips('Apple Home'),
     googleSupported: thirdAppTips('Google Home'),
     smartThingsSupported: thirdAppTips('SmartThings'),
     alexaSupported: thirdAppTips('Amazon Alexa'),
-    homeAssistantEntities: '设备接入到 HA 的实体类型，N/A 表示设备暂未支持（缺）',
-    homeAssistantSupported: '表示设备是否支持通过 MQTT 的方式同步到 Home Assistant（缺）',
+    homeAssistantEntities: 'Entity type when the device is integrated into Home Assistant. "N/A" means the device is not supported yet.',
+    homeAssistantSupported: 'Indicates whether the device can be synced to Home Assistant via MQTT.',
 };
 
 const mergeRowSpanCell = (_: FlatRow, index?: number) => ({ rowSpan: getMergedRowSpan(index) });
@@ -305,7 +305,7 @@ const createColumn = (key: keyof FlatRow | string, title: string, options: Parti
 
 /** 支持接入的设备 */
 const deviceInfoColumns: ColumnsType<FlatRow> = [
-    createColumn('deviceSource', '设备来源（缺）', {
+    createColumn('deviceSource', 'Device Source Types', {
         width: 172,
         fixed: true,
         customRender: ({ record }) => record.deviceSource,
@@ -358,12 +358,12 @@ const platformCapabilityColumns: ColumnGroupType<FlatRow>[] = [
                 width: 166,
                 customRender: ({ record }) => boolIcon(record.matterSupported),
             }),
-            createColumn('matterDeviceType', 'Matter Device Type', { width: 200, customRender: ({ record }) => record.matterDeviceType || 'Matter 无对应设备类型（缺）' }),
+            createColumn('matterDeviceType', 'Matter Device Type', { width: 200, customRender: ({ record }) => record.matterDeviceType || 'No corresponding Matter device type' }),
             createColumn('matterSupportedClusters', 'Cluster', {
                 width: 400,
                 customRender: ({ record }) => stringifyClusterInfo(record.matterSupportedClusters, record.matterUnsupportedClusters),
             }),
-            createColumn('matterProtocolVersion', 'Matter Version', { width: 150, customRender: ({ record }) => record.matterProtocolVersion || 'Matter 无对应设备类型（缺）' }),
+            createColumn('matterProtocolVersion', 'Matter Version', { width: 150, customRender: ({ record }) => record.matterProtocolVersion || 'No corresponding Matter device type' }),
             createColumn('appleSupported', 'Apple Home', {
                 width: 300,
                 customRender: ({ record }) => withNotes(record, 'appleSupported', 'appleNotes'),
@@ -398,7 +398,6 @@ const platformCapabilityColumns: ColumnGroupType<FlatRow>[] = [
     },
 ];
 
-// TODO: 待产品确认 “Cluster 为空”的具体含义
 function withNotes(
     record: FlatRow,
     supportKey: 'appleSupported' | 'googleSupported' | 'smartThingsSupported' | 'alexaSupported',
@@ -409,8 +408,8 @@ function withNotes(
     const isThirdAppEmpty = !supported.length;
     const { matterDeviceType } = record;
 
-    if (isThirdAppEmpty && matterDeviceType) return 'Bridge 暂未适配该设备（缺）';
-    if (isThirdAppEmpty && !matterDeviceType) return 'Matter 无对应设备类型（缺）';
+    if (isThirdAppEmpty && matterDeviceType) return 'Bridge not yet adapted to this device';
+    if (isThirdAppEmpty && !matterDeviceType) return 'No corresponding Matter device type';
     return h(MatterThirdPartAppCluster, {
         supported: supported,
         notes,
@@ -431,7 +430,7 @@ const getDropdownOptionMeta = (enumKey: keyof EnumFilters, limit?: number) => {
 };
 
 function stringifyClusterInfo(supported: string[], unsupported: string[]) {
-    if (!supported.length && !unsupported.length) return 'Bridge 暂未适配该设备（缺）';
+    if (!supported.length && !unsupported.length) return 'Bridge not yet adapted to this device';
     return h(Cluster, {
         supported,
         unsupported,
@@ -648,12 +647,12 @@ export const useColumns = () => {
     const baseColumns = computed<ColumnsType<FlatRow>>(() => {
         return [
             {
-                title: '支持接入的设备（缺）',
+                title: 'Supported Devices',
                 key: 'device',
                 children: deviceInfoColumns,
             },
             {
-                title: '设备接出的平台和能力（缺）',
+                title: 'Target Platforms & Capabilities',
                 key: 'platform-capability',
                 children: platformCapabilityColumns,
             },
