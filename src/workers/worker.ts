@@ -8,16 +8,16 @@ import { toString } from 'lodash-es';
 
 const MAX_FUSE_QUERY_LENGTH = 40;
 
-/** 鍏ㄩ噺鏁版嵁缂撳瓨 */
+/** 全量数据 */
 let rows: FlatRow[] = [];
 
-/** 鎼滅储 */
+/** 搜索用 Fuse 对象 */
 let fuse: Fuse<FlatRow> | null = null;
 
-/** 鏁版嵁鏇存柊鏃堕棿 */
+/** 数据表更新时间 */
 let updateTime: number = 0;
 
-/** 妯＄硦鎼滅储娑电洊鐨勯敭*/
+/** 能够支持模糊搜索的列表 key */
 let searchKeys: Array<keyof FlatRow> = [];
 
 function buildFuse(keys: (keyof FlatRow)[]) {
@@ -192,7 +192,7 @@ const api = {
             homeAssistantEntities: collectArray(byOtherFilters('homeAssistantEntities'), (row) => row.homeAssistantEntities),
         };
     },
-    /** 鐢熸垚瀵煎嚭鏂囦欢锟?Buffer */
+    /** 生成导出 excel 文件的 ArrayBuffer 数据 */
     async buildExcelBuf(columns: ExportColumn[]) {
         return await buildExcelBufferByTemplate(rows, columns);
     },

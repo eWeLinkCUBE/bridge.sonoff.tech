@@ -21,7 +21,7 @@
                     :name="name"
                     v-bind="{
                         ...slotProps,
-                        text: !slotProps.text ? '无' : slotProps.text,
+                        text: !slotProps.text ? '--' : slotProps.text,
                     }"
                 />
             </template>

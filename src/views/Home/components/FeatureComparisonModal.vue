@@ -5,17 +5,19 @@
                 <div class="title">{{ PAGE_TITLE }}</div>
                 <div class="content">
                     <div class="introduce">
-                        设备兼容与功能对照表可以查询网关支持接入的所有设备及设备接出的平台及对应的能力，表格显示数据为当前最新版本支持的设备，查询到的设备与您使用的实际体验有出入时请先将网关升级到最新版本（缺）
+                        The device compatibility and feature matrix shows all devices that can be connected to the Bridge, the platforms these devices can be integrated with, and
+                        the corresponding capabilities. The data in this table reflects the devices supported by the latest firmware version. If there is any discrepancy between
+                        the devices shown here and your actual experience, please upgrade the gateway to the latest version first.
                     </div>
                     <div class="content-info">
-                        <div class="content-title">支持接入的设备类型（缺）</div>
+                        <div class="content-title">Supported Device Types</div>
                         <div class="item" v-for="item in supportDeviceTypesOptions" :key="item.label">
                             <img :src="item.icon" class="icon" alt="" />
                             {{ item.label }}
                         </div>
                     </div>
                     <div class="content-info">
-                        <div class="content-title">支持接出的平台（缺）</div>
+                        <div class="content-title">Supported Sync Platforms</div>
                         <div class="item" v-for="item in supportPlatformsOptions" :key="item.label">
                             <img :src="item.icon" class="icon" alt="" />
                             {{ item.label }}
@@ -23,7 +25,7 @@
                     </div>
                 </div>
                 <div class="footer">
-                    <Button type="primary" class="footer-button" @click="$emit('cancel')">我知道了（缺）</Button>
+                    <Button type="primary" class="footer-button" @click="$emit('cancel')">Got it</Button>
                 </div>
             </div>
         </Modal>
@@ -53,11 +55,11 @@ const supportDeviceTypesOptions = [
         icon: zigbee,
     },
     {
-        label: 'eWeLink 账号下的设备（缺）',
+        label: 'eWeLink Devices ',
         icon: eWeLinkLogo,
     },
     {
-        label: 'Home Assistant 实体（缺）',
+        label: 'Home Assistant Entities',
         icon: homeAssistant,
     },
     {

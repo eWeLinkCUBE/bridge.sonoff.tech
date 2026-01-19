@@ -82,9 +82,9 @@ const getCellValue = (row: FlatRow, key: keyof FlatRow): string | number => {
         ewelinkSupported: (r) => (r.ewelinkSupported ? '√' : '×'),
         ewelinkCapabilities: (r) => ewelinkCapabilitiesLabel(r),
         matterSupported: (r) => (r.matterSupported ? '√' : '×'),
-        matterDeviceType: (r) => r.matterDeviceType ?? 'Matter 无对应设备类型（缺）',
+        matterDeviceType: (r) => r.matterDeviceType ?? 'No corresponding Matter device type',
         matterSupportedClusters: (r) => clusterLabel(r.matterSupportedClusters, r.matterUnsupportedClusters),
-        matterProtocolVersion: (r) => r.matterProtocolVersion || 'Matter 无对应设备类型（缺）',
+        matterProtocolVersion: (r) => r.matterProtocolVersion || 'No corresponding Matter device type',
         appleSupported: (r) => thirdAppMatterBridgeLabel(r, 'appleSupported'),
         googleSupported: (r) => thirdAppMatterBridgeLabel(r, 'googleSupported'),
         smartThingsSupported: (r) => thirdAppMatterBridgeLabel(r, 'smartThingsSupported'),
@@ -220,7 +220,7 @@ const ewelinkCapabilitiesLabel = (row: FlatRow) => {
 
 const clusterLabel = (supported: string[], unsupported: string[]) => {
     return !supported.length && !unsupported.length
-        ? 'Bridge 暂未适配该设备（缺）'
+        ? 'Bridge not yet adapted to this device'
         : `${supported.map((item) => `√${item}`).join('\n')}\n${unsupported.map((item) => `×${item}`).join('\n')}`;
 };
 
@@ -229,7 +229,7 @@ const thirdAppMatterBridgeLabel = (row: FlatRow, supportKey: 'appleSupported' | 
     const isThirdAppEmpty = !supported.length;
     const { matterDeviceType } = row;
 
-    if (isThirdAppEmpty && matterDeviceType) return 'Bridge 暂未适配该设备（缺）';
-    if (isThirdAppEmpty && !matterDeviceType) return 'Matter 无对应设备类型（缺）';
+    if (isThirdAppEmpty && matterDeviceType) return 'Bridge not yet adapted to this device';
+    if (isThirdAppEmpty && !matterDeviceType) return 'No corresponding Matter device type';
     return supported.join('\n');
 };
