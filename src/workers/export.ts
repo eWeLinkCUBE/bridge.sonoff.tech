@@ -84,7 +84,7 @@ const getCellValue = (row: FlatRow, key: keyof FlatRow): string | number => {
         matterSupported: (r) => (r.matterSupported ? '√' : '×'),
         matterDeviceType: (r) => r.matterDeviceType ?? 'Matter 无对应设备类型（缺）',
         matterSupportedClusters: (r) => clusterLabel(r.matterSupportedClusters, r.matterUnsupportedClusters),
-        matterProtocolVersion: (r) => r.matterProtocolVersion || 'N/A',
+        matterProtocolVersion: (r) => r.matterProtocolVersion || 'Matter 无对应设备类型（缺）',
         appleSupported: (r) => thirdAppMatterBridgeLabel(r, 'appleSupported'),
         googleSupported: (r) => thirdAppMatterBridgeLabel(r, 'googleSupported'),
         smartThingsSupported: (r) => thirdAppMatterBridgeLabel(r, 'smartThingsSupported'),
@@ -220,7 +220,7 @@ const ewelinkCapabilitiesLabel = (row: FlatRow) => {
 
 const clusterLabel = (supported: string[], unsupported: string[]) => {
     return !supported.length && !unsupported.length
-        ? 'Not Yet Supported'
+        ? 'Bridge 暂未适配该设备（缺）'
         : `${supported.map((item) => `√${item}`).join('\n')}\n${unsupported.map((item) => `×${item}`).join('\n')}`;
 };
 

@@ -15,6 +15,7 @@ import type { ColumnGroupType } from 'ant-design-vue/es/vc-table/interface';
 import { fetchDistinct, loadData, queryRows, buildExcelBuf } from '@/services/dataClient';
 import { saveAs } from 'file-saver';
 import { buildMergeSpans, isMergeColumn } from '@/utils/mergeCells';
+import dayjs from 'dayjs';
 
 export type FilterKey = 'ewelink' | 'matter' | 'homeAssistant' | 'appleSupported' | 'googleSupported' | 'smartThingsSupported' | 'alexaSupported';
 
@@ -362,7 +363,7 @@ const platformCapabilityColumns: ColumnGroupType<FlatRow>[] = [
                 width: 400,
                 customRender: ({ record }) => stringifyClusterInfo(record.matterSupportedClusters, record.matterUnsupportedClusters),
             }),
-            createColumn('matterProtocolVersion', 'Matter Version', { width: 150, customRender: ({ record }) => record.matterProtocolVersion || 'N/A' }),
+            createColumn('matterProtocolVersion', 'Matter Version', { width: 150, customRender: ({ record }) => record.matterProtocolVersion || 'Matter 无对应设备类型（缺）' }),
             createColumn('appleSupported', 'Apple Home', {
                 width: 300,
                 customRender: ({ record }) => withNotes(record, 'appleSupported', 'appleNotes'),
@@ -430,7 +431,7 @@ const getDropdownOptionMeta = (enumKey: keyof EnumFilters, limit?: number) => {
 };
 
 function stringifyClusterInfo(supported: string[], unsupported: string[]) {
-    if (!supported.length && !unsupported.length) return 'Not Yet Supported';
+    if (!supported.length && !unsupported.length) return 'Bridge 暂未适配该设备（缺）';
     return h(Cluster, {
         supported,
         unsupported,
@@ -672,7 +673,7 @@ export const useColumns = () => {
         const blob = new Blob([buf], {
             type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         });
-        saveAs(blob, `export_${Date.now()}.xlsx`);
+        saveAs(blob, `Supported Devices & Device Feature Matrix for the Bridge_${dayjs().format('YYYY-MM-DD')}.xlsx`);
     };
 
     return {
