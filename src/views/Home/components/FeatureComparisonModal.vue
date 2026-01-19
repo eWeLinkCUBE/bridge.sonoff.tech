@@ -1,6 +1,6 @@
 <template>
     <div class="feature-comparison-modal" ref="featureComparisonModal">
-        <Modal :open="visible" :closable="false" :get-container="featureComparisonModal" :destroyOnClose="true" :footer="null" width="440px" centered>
+        <Modal :open="visible" :closable="false" :get-container="featureComparisonModal" :destroyOnClose="true" :footer="null" width="550px" centered>
             <div class="modal-content">
                 <div class="title">{{ PAGE_TITLE }}</div>
                 <div class="content">

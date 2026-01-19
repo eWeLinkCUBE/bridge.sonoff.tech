@@ -79,7 +79,7 @@ const enumFilterSearch = ref<Partial<Record<keyof EnumFilters, string>>>({});
 // 各列当前展开的筛选项数量；用于“显示更多”
 const enumFilterLimit = ref<Partial<Record<keyof EnumFilters, number>>>({});
 /** 是否展示筛选 */
-const filterVisible = ref(false);
+const filterVisible = ref(true);
 /** 初始化 loading */
 const initLoading = ref(false);
 
