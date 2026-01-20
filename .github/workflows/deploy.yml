@@ -11,8 +11,8 @@ jobs:
     build-and-deploy:
         runs-on: ubuntu-latest
         env:
-            IS_PRODUCTION: ${{ github.repository == 'eWeLinkCUBE/zbridge.sonoff.tech' && 'true' || 'false' }}
-            VITE_BASE_URL: ${{ github.repository == 'eWeLinkCUBE/zbridge.sonoff.tech' && '/' || '/zigbee-device-table-web-test' }}
+            IS_PRODUCTION: ${{ github.repository == 'eWeLinkCUBE/bridge.sonoff.tech' && 'true' || 'false' }}
+            VITE_BASE_URL: ${{ github.repository == 'eWeLinkCUBE/bridge.sonoff.tech' && '/' || '/zigbee-device-table-web-test' }}
             # USE_CUSTOM_DOMAIN: 'true'
             # CUSTOM_DOMAIN: example.com
 
