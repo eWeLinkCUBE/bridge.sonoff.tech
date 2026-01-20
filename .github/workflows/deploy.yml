@@ -46,22 +46,22 @@ jobs:
             - name: Create folder for custom path and copy index.html then generate redirect files if production
               if: env.IS_PRODUCTION == 'true'
               run: |
-                  mkdir -p dist/zigbee-bridge-ultra-supported-devices
-                  cp dist/index.html dist/zigbee-bridge-ultra-supported-devices/index.html
+                  mkdir -p dist/device-function-reference-table
+                  cp dist/index.html dist/device-function-reference-table/index.html
                   # Create redirect file for custom path
                   echo '<!DOCTYPE html>
                   <html lang="en">
                     <head>
                       <meta charset="UTF-8" />
                       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                      <meta http-equiv="refresh" content="0; url=/zigbee-bridge-ultra-supported-devices">
+                      <meta http-equiv="refresh" content="0; url=/device-function-reference-table">
                       <title>Redirecting...</title>
                       <script type="text/javascript">
-                        window.location.href = "/zigbee-bridge-ultra-supported-devices";
+                        window.location.href = "/device-function-reference-table";
                       </script>
                     </head>
                     <body>
-                      <p>If you are not redirected, click <a href="/zigbee-bridge-ultra-supported-devices">here</a>.</p>
+                      <p>If you are not redirected, click <a href="/device-function-reference-table">here</a>.</p>
                     </body>
                   </html>' > dist/index.html
 
@@ -71,14 +71,14 @@ jobs:
                     <head>
                       <meta charset="UTF-8" />
                       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                      <meta http-equiv="refresh" content="0; url=/zigbee-bridge-ultra-supported-devices">
+                      <meta http-equiv="refresh" content="0; url=/device-function-reference-table">
                       <title>Redirecting...</title>
                       <script type="text/javascript">
-                        window.location.href = "/zigbee-bridge-ultra-supported-devices";
+                        window.location.href = "/device-function-reference-table";
                       </script>
                     </head>
                     <body>
-                      <p>If you are not redirected, click <a href="/zigbee-bridge-ultra-supported-devices">here</a>.</p>
+                      <p>If you are not redirected, click <a href="/device-function-reference-table">here</a>.</p>
                     </body>
                   </html>' > dist/404.html
 
