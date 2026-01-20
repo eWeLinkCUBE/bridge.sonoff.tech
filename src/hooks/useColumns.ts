@@ -666,7 +666,7 @@ export const useColumns = () => {
     });
 
     const exportToExcel = async () => {
-        const exportColumns = buildExportColumns(tableColumns.value);
+        const exportColumns = buildExportColumns(baseColumns.value);
         const buf = await buildExcelBuf(exportColumns);
         if (!buf) return;
         const blob = new Blob([buf], {
